@@ -105,6 +105,7 @@ export const DesignSettings: React.FC = () => {
     { type: 'ABOUT', label: 'About Us', icon: Globe },
     { type: 'NEWSLETTER', label: 'Newsletter', icon: Globe },
     { type: 'BANNER', label: 'Call to Action', icon: Smartphone },
+    { type: 'SALE_BANNER', label: 'Season Sale', icon: ShoppingBag },
     { type: 'HTML_CONTENT', label: 'Custom HTML', icon: Code },
   ];
 
@@ -419,6 +420,53 @@ export const DesignSettings: React.FC = () => {
                                   </div>
                                 </div>
 
+                                 {(editingSection.type === 'HERO' || editingSection.type === 'BANNER' || editingSection.type === 'SALE_BANNER') && (
+                                  <div className="space-y-2 pb-2">
+                                    <Label className="text-[10px] font-black uppercase text-gray-400">Banner Image</Label>
+                                    <div className="flex gap-4 items-center bg-gray-50 p-4 rounded-2xl border border-dashed border-gray-200">
+                                      <div className="w-24 h-16 rounded-xl overflow-hidden bg-white border shrink-0">
+                                        <img 
+                                          src={editingSection.config?.imageUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=2000'} 
+                                          className="w-full h-full object-cover" 
+                                        />
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <div className="flex gap-2">
+                                          <Input 
+                                            value={editingSection.config?.imageUrl || ''} 
+                                            onChange={(e) => setEditingSection({...editingSection, config: {...(editingSection.config || {}), imageUrl: e.target.value}})}
+                                            placeholder="Image URL"
+                                            className="h-10 text-xs rounded-xl"
+                                          />
+                                          <label className="flex items-center justify-center w-10 h-10 rounded-xl bg-black text-white cursor-pointer hover:scale-105 transition-transform shrink-0">
+                                            {isOptimizingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                            <input 
+                                              type="file" 
+                                              className="hidden" 
+                                              accept="image/*" 
+                                              onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setIsOptimizingSection(true);
+                                                try {
+                                                  const optimized = await optimizeImage(file, 1920, 1080);
+                                                  setEditingSection({
+                                                    ...editingSection,
+                                                    config: { ...(editingSection.config || {}), imageUrl: optimized }
+                                                  });
+                                                } finally {
+                                                  setIsOptimizingSection(false);
+                                                }
+                                              }} 
+                                            />
+                                          </label>
+                                        </div>
+                                        <p className="text-[9px] text-gray-400">Recommended size: 1920x300px for Season Sale banners.</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
                                 <div className="space-y-4">
                                   <div className="flex justify-between items-center">
                                     <Label className="text-[10px] font-black uppercase text-gray-400">Gallery / Images</Label>
@@ -451,8 +499,7 @@ export const DesignSettings: React.FC = () => {
                                                 config: { 
                                                   ...(editingSection.config || {}), 
                                                   gallery: [...currentGallery, ...newImages],
-                                                  // Set first image as imageUrl if empty
-                                                  imageUrl: editingSection.config?.imageUrl || newImages[0]
+                                                  imageUrl: newImages[0] || editingSection.config?.imageUrl || ''
                                                 }
                                               });
                                             } catch (err) {
