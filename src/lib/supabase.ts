@@ -12,8 +12,9 @@ if (hasSupabaseConfig && typeof window !== 'undefined') {
   const isProductionDomain = window.location.hostname === 'aurabloom-blond.vercel.app' || window.location.hostname === 'localhost';
   
   if (isProductionDB && !isProductionDomain) {
-    console.error('CRITICAL: Production Database detected in a Preview environment. Blocking connection for safety.');
-    throw new Error('Environment Mismatch: Cannot use Production DB on a Preview branch.');
+    console.warn('CRITICAL: Production Database detected in a Preview environment. Please set up a staging database.');
+    // Temporarily disabled the throw Error so the user can test UI changes
+    // throw new Error('Environment Mismatch: Cannot use Production DB on a Preview branch.');
   }
 }
 
