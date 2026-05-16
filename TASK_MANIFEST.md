@@ -4,15 +4,15 @@
 > **MANDATORY PROTOCOL:** The AI assistant MUST read this entire file before starting ANY task. 
 > All work must be performed on a unique branch. No changes are allowed to the `main` branch without explicit approval after physical testing.
 
-## Mandatory Rules & Restrictions
+## Mandatory Rules & Restrictions (CODE & DATA)
 - **Zero-Touch Policy**: Only modify code directly related to the requested task.
 - **Micro-Branching**: One specific issue per branch.
-- **No Production DB Mutating**: Never modify the production database directly.
-- **Safe Migrations**: Never run destructive migrations.
-- **Auth Security**: Never change Supabase policies without approval.
-- **Environment Integrity**: Never edit or expose `.env` variables.
+- **Database Separation**: Never point a development branch to the Production Database.
+- **Production Lock**: No AI agent is allowed to modify Supabase schema, RLS, or Auth settings on Production without a staging-tested migration plan.
+- **Safe Migrations**: Database changes must be documented and approved after staging verification.
+- **Environment Integrity**: Never edit, expose, or commit `.env` variables to GitHub.
 - **Audit Requirement**: Every change must be documented in the Task Log below.
-- **Small Commits**: Keep commits isolated and focused.
+- **Zero Cleanup**: No "refactoring" or "cleaning" of unrelated code. Keep changes targeted.
 
 ---
 
