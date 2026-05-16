@@ -37,5 +37,17 @@
 
 ---
 
+### [IN-TESTING] Task 2: Fix Shipping Charges Consistency
+- **Date**: 2026-05-17
+- **Branch**: `fix/shipping-charges-consistency`
+- **Description**: Resolved the issue where shipping was hardcoded as "FREE" in the cart and checkout despite being set differently in the dashboard.
+- **Files Modified**: 
+  - `src/pages/storefront/CartPage.tsx`: Linked shipping display to `trustFeatures` settings.
+  - `src/pages/storefront/CheckoutPage.tsx`: Linked shipping display to `trustFeatures` settings.
+  - `src/pages/dashboard/OrdersPage.tsx`: Updated admin order view to reflect the same shipping text.
+- **Verification**: User should verify that the Cart, Checkout, and Admin Orders now display the exact text set in "General Settings".
+
+---
+
 ## Current Active Task
-*No active task. Waiting for user instruction.*
+*No active task. Waiting for user verification of Task 2.*
