@@ -250,7 +250,9 @@ export const CheckoutPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Shipping</span>
-                  <span className="text-green-600 font-medium">FREE</span>
+                  <span className={settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title.toLowerCase().includes('free') ? "text-green-600 font-medium" : "text-black font-medium"}>
+                    {settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title || 'FREE'}
+                  </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg pt-4">
                   <span>Total</span>
