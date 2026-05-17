@@ -45,11 +45,12 @@
   - `src/pages/storefront/CartPage.tsx`: Linked shipping display to `trustFeatures` settings.
   - `src/pages/storefront/CheckoutPage.tsx`: Linked shipping display to `trustFeatures` settings.
   - `src/pages/dashboard/OrdersPage.tsx`: Updated admin order view to reflect the same shipping text.
-- **Verification**: User should verify that the Cart, Checkout, and Admin Orders now display the exact text set in "General Settings".
+- **Vercel Sandbox URLs**:
+  - Storefront: [https://aurabloom-git-fix-shipping-charges-co-0f204e-devsfolks-projects.vercel.app](https://aurabloom-git-fix-shipping-charges-co-0f204e-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-fix-shipping-charges-co-0f204e-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-fix-shipping-charges-co-0f204e-devsfolks-projects.vercel.app/dashboard)
+- **Verification**: User verified that the Cart, Checkout, and Admin Orders now display the exact text set in "General Settings".
 
 ---
-
-## Current Active Task
 
 ### [COMPLETED] Task 3.1: Fix WhatsApp Icon and Redirect
 - **Date**: 2026-05-17
@@ -59,16 +60,26 @@
   - `src/components/icons/WhatsAppIcon.tsx`: Created custom WhatsApp SVG.
   - `src/components/layout/StoreLayout.tsx`: Added formatSocialUrl to auto-convert phone numbers to wa.me links. Used custom icon.
   - `src/pages/dashboard/GeneralSettings.tsx`: Used custom icon in the preview.
-- **Verification**: The user should verify the real WhatsApp icon appears and clicking it redirects to WhatsApp even if they just typed a phone number.
+- **Verification**: The user verified the real WhatsApp icon appears and clicking it redirects to WhatsApp even if they just typed a phone number.
+
+---
+
+### [COMPLETED] Task 4: Fix WhatsApp Orders Saving & Dashboard Status Updates
+- **Date**: 2026-05-17
+- **Branch**: `feat/dashboard-orders-whatsapp`
+- **Description**: Ensure WhatsApp orders are saved to the dashboard before redirecting, and fix the order status update dropdown in the dashboard. Added WhatsApp verification badges, platform indicators, and an ABANDONED status option.
+- **Files Modified**: 
+  - `src/context/ShopContext.tsx`: Pre-save order to database with `PENDING_WHATSAPP` / `ABANDONED` status before wa.me redirect, and fix order status update persist logic.
+  - `src/pages/dashboard/OrdersPage.tsx`: Add ABANDONED status styling, platform source icons in the order row, and WhatsApp verification badge.
+  - `src/pages/storefront/CheckoutPage.tsx`: Trigger order saving when clicking WhatsApp CTA.
+  - `src/types.ts`: Define order status enum including `ABANDONED`.
+  - `supabase/schema.sql`: Ensure DB supports the statuses and source platforms.
+- **Vercel Sandbox URLs**:
+  - Storefront: [https://aurabloom-git-feat-dashboard-orders-whatsapp-devsfolks-projects.vercel.app](https://aurabloom-git-feat-dashboard-orders-whatsapp-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-feat-dashboard-orders-whatsapp-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-dashboard-orders-whatsapp-devsfolks-projects.vercel.app/dashboard)
+- **Verification**: User placed a WhatsApp order and saw it in the dashboard. User changed an order status in the dashboard and saw it persist correctly.
 
 ---
 
 ## Current Active Task
-
-### [IN-PROGRESS] Task 4: Fix WhatsApp Orders Saving & Dashboard Status Updates
-- **Date**: 2026-05-17
-- **Branch**: `feat/dashboard-orders-whatsapp`
-- **Description**: Ensure WhatsApp orders are saved to the dashboard before redirecting, and fix the order status update dropdown in the dashboard.
-- **Files Modified**: 
-  - (Will be updated)
-- **Verification**: User should place a WhatsApp order and see it in the dashboard. User should change an order status in the dashboard and see it persist.
+*No active task. Waiting for user instruction.*
