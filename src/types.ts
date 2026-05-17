@@ -166,4 +166,5 @@ export interface Order {
   total: number;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
   createdAt: number;
+  paymentMethod?: string;
 }

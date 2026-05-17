@@ -315,6 +315,7 @@ const mapOrderRow = (row: any): Order => ({
   total: Number(row.total),
   status: row.status,
   createdAt: row.created_at ?? Date.now(),
+  paymentMethod: row.payment_method,
 });
 
 const toCategoryRow = (category: Category) => ({

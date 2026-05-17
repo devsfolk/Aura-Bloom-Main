@@ -76,7 +76,8 @@ export const OrdersPage: React.FC = () => {
                     <td className="p-3 md:p-5 font-black text-xs md:text-sm">{settings.currencySymbol}{order.total.toFixed(2)}</td>
                     <td className="p-3 md:p-5">{getStatusBadge(order.status)}</td>
                     <td className="p-3 md:p-5 text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {new Date(order.createdAt).toLocaleDateString()} <br />
+                      <span className="text-[7px] md:text-[8px] opacity-70">{new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </td>
                     <td className="p-3 md:p-5 text-right">
                       <Button 
@@ -104,7 +105,14 @@ export const OrdersPage: React.FC = () => {
               <div className="p-6 md:p-8 bg-gray-50 border-b flex justify-between items-center">
                 <div>
                   <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">Order Details</h2>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{selectedOrder.id}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{selectedOrder.id}</p>
+                    {selectedOrder.paymentMethod && (
+                      <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${selectedOrder.paymentMethod === 'WHATSAPP' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                        {selectedOrder.paymentMethod}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {getStatusBadge(selectedOrder.status)}
@@ -113,6 +121,14 @@ export const OrdersPage: React.FC = () => {
               
               <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
+                  {selectedOrder.paymentMethod === 'WHATSAPP' && selectedOrder.status === 'PENDING' && (
+                    <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-yellow-800 mb-1">⚠️ WhatsApp Order</p>
+                      <p className="text-[10px] text-yellow-700 leading-relaxed">
+                        Awaiting customer message verification. Change status to PROCESSING once verified.
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Customer Information</h3>
                     <div className="space-y-1">
