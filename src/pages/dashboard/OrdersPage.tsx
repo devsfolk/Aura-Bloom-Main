@@ -9,11 +9,11 @@ import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { supabase } from '@/lib/supabase';
 
 const parsePaymentMethod = (methodStr: string | null | undefined) => {
-  if (!methodStr) return { method: 'COD', verified: false, receiptUrl: '' };
-  if (methodStr === 'WHATSAPP') return { method: 'WHATSAPP', verified: false, receiptUrl: '' };
-  if (methodStr === 'stripe') return { method: 'stripe', verified: true, receiptUrl: '' };
-  if (methodStr === 'paypal') return { method: 'paypal', verified: true, receiptUrl: '' };
-  if (methodStr === 'cod') return { method: 'COD', verified: false, receiptUrl: '' };
+  if (!methodStr) return { method: 'COD', verified: false, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'WHATSAPP') return { method: 'WHATSAPP', verified: false, receiptUrl: '', source: 'WHATSAPP' };
+  if (methodStr === 'stripe') return { method: 'stripe', verified: true, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'paypal') return { method: 'paypal', verified: true, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'cod') return { method: 'COD', verified: false, receiptUrl: '', source: 'WEBSITE' };
   
   try {
     const parsed = JSON.parse(methodStr);
@@ -22,10 +22,11 @@ const parsePaymentMethod = (methodStr: string | null | undefined) => {
       verified: parsed.verified || false,
       receiptUrl: parsed.receiptUrl || '',
       bankName: parsed.bankName || '',
-      autoVerified: parsed.autoVerified || false
+      autoVerified: parsed.autoVerified || false,
+      source: parsed.source || 'WEBSITE'
     };
   } catch {
-    return { method: methodStr, verified: false, receiptUrl: '' };
+    return { method: methodStr, verified: false, receiptUrl: '', source: 'WEBSITE' };
   }
 };
 
@@ -33,6 +34,102 @@ export const OrdersPage: React.FC = () => {
   const { orders, settings, updateOrderStatus, refreshOrders } = useShop();
   const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
   const [zoomReceiptUrl, setZoomReceiptUrl] = React.useState<string | null>(null);
+  const [activeToast, setActiveToast] = React.useState<any | null>(null);
+  const prevOrdersRef = React.useRef<any[]>([]);
+
+  // Synthesize double telephone-buzz chime using HTML5 Web Audio API
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const playTone = (time: number, freq1: number, freq2: number, duration: number) => {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        
+        osc1.frequency.setValueAtTime(freq1, time);
+        osc2.frequency.setValueAtTime(freq2, time);
+        
+        // Ringing amplitude envelope
+        gainNode.gain.setValueAtTime(0, time);
+        gainNode.gain.linearRampToValueAtTime(0.35, time + 0.04);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc1.start(time);
+        osc2.start(time);
+        
+        osc1.stop(time + duration);
+        osc2.stop(time + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Cycle 1
+      playTone(now, 853, 857, 0.18);
+      playTone(now + 0.22, 853, 857, 0.18);
+      playTone(now + 0.44, 853, 857, 0.42);
+      
+      // Cycle 2
+      playTone(now + 0.9, 853, 857, 0.18);
+      playTone(now + 1.12, 853, 857, 0.18);
+      playTone(now + 1.34, 853, 857, 0.42);
+    } catch (err) {
+      console.error('Notification audio failed:', err);
+    }
+  };
+
+  // Request browser Notification permission
+  React.useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      void Notification.requestPermission();
+    }
+  }, []);
+
+  // Monitor order list and trigger alerts on new orders (regardless of status)
+  React.useEffect(() => {
+    if (orders.length > 0) {
+      if (prevOrdersRef.current.length > 0) {
+        const newOrders = orders.filter(
+          (o) => !prevOrdersRef.current.some((prev) => prev.id === o.id)
+        );
+
+        if (newOrders.length > 0) {
+          const latestOrder = newOrders[0];
+          
+          // Ring audio sound
+          playNotificationSound();
+          
+          // Vibrate phone & show push notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('🚨 New Order Received! (DevsFolk OmniStore)', {
+                body: `Customer: ${latestOrder.customerName}\nTotal: ${settings.currencySymbol}${latestOrder.total.toFixed(2)}\nPlatform: ${latestOrder.paymentMethod === 'WHATSAPP' ? 'WhatsApp' : 'Website'}`,
+                icon: '/favicon.ico',
+                vibrate: [200, 100, 200, 100, 200]
+              });
+            } catch (err) {
+              console.error('System push alert trigger error:', err);
+            }
+          }
+
+          // Show floating toast
+          setActiveToast(latestOrder);
+          setTimeout(() => {
+            setActiveToast(null);
+          }, 8000);
+        }
+      }
+      prevOrdersRef.current = orders;
+    }
+  }, [orders, settings.currencySymbol]);
 
   React.useEffect(() => {
     void refreshOrders();
@@ -95,49 +192,36 @@ export const OrdersPage: React.FC = () => {
                 orders.map((order) => {
                   const paymentInfo = parsePaymentMethod(order.paymentMethod);
                   
-                  // Curate rich status icons
-                  let paymentIcon = (
-                    <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0" title="Website Order">
+                  // Platform source icon (WhatsApp vs Globe Website)
+                  const isWhatsAppSource = order.paymentMethod === 'WHATSAPP' || paymentInfo.source === 'WHATSAPP';
+                  const sourceIcon = isWhatsAppSource ? (
+                    <div className="bg-green-50 p-2 rounded-xl flex-shrink-0 shadow-sm" title="WhatsApp Order">
+                      <WhatsAppIcon className="h-3.5 w-3.5 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0 shadow-sm" title="Website Order">
                       <Globe className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                   );
-                  
-                  if (order.paymentMethod === 'WHATSAPP') {
-                    paymentIcon = (
-                      <div className="bg-green-50 p-2 rounded-xl flex-shrink-0" title="WhatsApp Order">
-                        <WhatsAppIcon className="h-3.5 w-3.5 text-green-600" />
-                      </div>
-                    );
-                  } else if (paymentInfo.method === 'bank') {
-                    if (paymentInfo.verified) {
-                      paymentIcon = (
-                        <div className="bg-emerald-50 p-2 rounded-xl flex-shrink-0 shadow-sm border border-emerald-100/50" title="Paid Customer - Bank Verified">
-                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
-                        </div>
-                      );
-                    } else {
-                      paymentIcon = (
-                        <div className="bg-amber-50 p-2 rounded-xl flex-shrink-0 shadow-sm border border-amber-100/50 animate-pulse" title="Bank Transfer - Review Receipt">
-                          <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
-                        </div>
-                      );
-                    }
-                  }
                   
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-3 md:p-5 font-mono text-[8px] md:text-[10px] opacity-40">{order.id}</td>
                       <td className="p-3 md:p-5">
                         <div className="flex items-center gap-3">
-                          {paymentIcon}
+                          {sourceIcon}
                           <div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-black text-xs md:text-sm uppercase tracking-tight truncate max-w-[80px] md:max-w-none">{order.customerName}</span>
                               {paymentInfo.method === 'bank' && (
                                 paymentInfo.verified ? (
-                                  <span className="text-[7px] font-black tracking-widest bg-emerald-50 text-emerald-700 uppercase px-1.5 py-0.5 rounded border border-emerald-100 leading-none">Paid</span>
+                                  <span className="text-[7px] font-black bg-emerald-50 text-emerald-700 uppercase px-1.5 py-0.5 rounded border border-emerald-100 leading-none flex items-center gap-1 shrink-0">
+                                    <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 animate-pulse" /> Paid
+                                  </span>
                                 ) : (
-                                  <span className="text-[7px] font-black tracking-widest bg-amber-50 text-amber-700 uppercase px-1.5 py-0.5 rounded border border-amber-100 leading-none animate-pulse">Review</span>
+                                  <span className="text-[7px] font-black bg-amber-50 text-amber-700 uppercase px-1.5 py-0.5 rounded border border-amber-100 leading-none animate-pulse flex items-center gap-1 shrink-0">
+                                    <ShieldAlert className="h-2.5 w-2.5 text-amber-600" /> Review
+                                  </span>
                                 )
                               )}
                             </div>
@@ -379,6 +463,42 @@ export const OrdersPage: React.FC = () => {
                 alt="Receipt Zoom" 
                 className="max-w-full max-h-full object-contain" 
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Real-Time Order Toast Notification */}
+      {activeToast && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-sm w-full bg-black/90 backdrop-blur-md text-white rounded-[2rem] p-6 shadow-2xl border border-white/10 animate-in slide-in-from-top-12 fade-in duration-300">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center shrink-0 animate-pulse shadow-lg shadow-red-500/30">
+              <ShoppingBag className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-black uppercase tracking-widest text-red-500 leading-none">🚨 Real-time Order Alert</span>
+                <button 
+                  onClick={() => setActiveToast(null)}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <h5 className="font-black text-sm uppercase tracking-tight">{activeToast.customerName} placed a new order!</h5>
+              <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+                Total: <strong>{settings.currencySymbol}{activeToast.total.toFixed(2)}</strong> via {activeToast.paymentMethod === 'WHATSAPP' ? 'WhatsApp' : 'Website'}.
+              </p>
+              <Button 
+                size="sm" 
+                className="w-full mt-3 rounded-xl bg-white hover:bg-gray-100 text-black border-none font-bold text-[9px] uppercase tracking-wider h-8"
+                onClick={() => {
+                  setSelectedOrder(activeToast);
+                  setActiveToast(null);
+                }}
+              >
+                <Eye className="h-3 w-3 mr-1.5" /> View Details
+              </Button>
             </div>
           </div>
         </div>

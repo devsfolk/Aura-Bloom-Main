@@ -111,23 +111,62 @@ export const CheckoutPage: React.FC = () => {
       const targetAmount = cartTotal.toFixed(2);
       const targetAmountInt = Math.round(cartTotal).toString();
       
-      // Look for the total amount inside the text (as decimal or as rounded integer)
+      // 1. Look for the total amount inside the text (as decimal, rounded, locale formats)
       const hasAmount = text.includes(targetAmount) || 
                         text.includes(targetAmountInt) || 
                         text.includes(cartTotal.toString()) ||
                         text.includes(cartTotal.toLocaleString('en-US')) ||
-                        text.includes(cartTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+                        text.includes(cartTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })) ||
+                        text.replace(/[^0-9]/g, '').includes(Math.round(cartTotal).toString());
 
-      // Look for status keywords
-      const successKeywords = ['successful', 'success', 'completed', 'sent', 'transferred', 'paid', 'received', 'status', 'approved', 'transaction id', 'trx', 'ref'];
-      const hasSuccessKeyword = successKeywords.some(keyword => text.includes(keyword));
-
-      // Match the admin's bank/wallet details optionally if present
+      // 2. Look for the account title (fuzzy matching major words)
       const bankDetails = settings.paymentSettings?.bankTransfer;
-      const hasBankDetails = bankDetails?.accountNumber ? text.includes(bankDetails.accountNumber.replace(/[^0-9]/g, '')) : false;
+      const cleanTitle = (bankDetails?.accountTitle || '').toLowerCase().trim();
+      const titleWords = cleanTitle.split(/\s+/).filter(w => w.length > 2);
+      const hasAccountTitle = cleanTitle.length > 0 && (
+        text.includes(cleanTitle) ||
+        (titleWords.length > 0 && titleWords.every(word => text.includes(word))) ||
+        (titleWords.length >= 2 && titleWords.filter(word => text.includes(word)).length >= 2)
+      );
 
-      // Determine verification outcome
-      const isVerified = hasAmount || (hasSuccessKeyword && hasBankDetails);
+      // 3. Look for the bank name (fuzzy bank words and aliases)
+      const cleanBankName = (bankDetails?.bankName || '').toLowerCase().trim();
+      const bankWords = cleanBankName.split(/\s+/).filter(w => w.length > 2);
+      
+      const bankAliases: Record<string, string[]> = {
+        'meezan': ['meezan', 'mbl'],
+        'easypaisa': ['easypaisa', 'telenor', 'ep'],
+        'sadapay': ['sadapay', 'sada'],
+        'jazzcash': ['jazzcash', 'mobilink', 'jc'],
+        'hbl': ['hbl', 'habib'],
+        'nayapay': ['nayapay', 'naya'],
+        'alfalah': ['alfalah', 'bafl'],
+        'faysal': ['faysal', 'fbl'],
+        'allied': ['allied', 'abl'],
+        'mcb': ['mcb'],
+        'ubl': ['ubl', 'united']
+      };
+
+      const matchedAlias = Object.keys(bankAliases).some(key => {
+        if (cleanBankName.includes(key)) {
+          return bankAliases[key].some(alias => text.includes(alias));
+        }
+        return false;
+      });
+
+      const hasBankName = cleanBankName.length > 0 && (
+        text.includes(cleanBankName) ||
+        (bankWords.length > 0 && bankWords.every(word => text.includes(word))) ||
+        matchedAlias
+      );
+
+      // Determine verification outcome - Amount, Account Title, and Bank Name must match if configured!
+      const enforceTitle = !!cleanTitle;
+      const enforceBank = !!cleanBankName;
+      
+      const isVerified = hasAmount && 
+                         (!enforceTitle || hasAccountTitle) && 
+                         (!enforceBank || hasBankName);
 
       setTimeout(() => {
         setOcrProgress(100);
@@ -482,7 +521,7 @@ export const CheckoutPage: React.FC = () => {
                         <div className="relative z-10 space-y-4 w-full max-w-xs">
                           <Loader2 className="h-8 w-8 text-green-500 animate-spin mx-auto" />
                           <div className="space-y-1">
-                            <h6 className="font-bold text-sm uppercase tracking-widest text-green-500">AI Receipt Analyzer</h6>
+                            <h6 className="font-bold text-sm uppercase tracking-widest text-green-500">DevsFolk AI Receipt Analyzer</h6>
                             <p className="text-xs text-gray-300 leading-relaxed font-medium">{ocrStatus}</p>
                           </div>
                           
