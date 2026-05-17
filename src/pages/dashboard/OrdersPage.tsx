@@ -3,8 +3,9 @@ import { useShop } from '@/context/ShopContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Eye, CheckCircle, XCircle, Clock, ChevronLeft } from 'lucide-react';
+import { ShoppingBag, Eye, CheckCircle, XCircle, Clock, ChevronLeft, Globe } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 
 export const OrdersPage: React.FC = () => {
   const { orders, settings, updateOrderStatus, refreshOrders } = useShop();
@@ -72,8 +73,21 @@ export const OrdersPage: React.FC = () => {
                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-3 md:p-5 font-mono text-[8px] md:text-[10px] opacity-40">{order.id}</td>
                     <td className="p-3 md:p-5">
-                      <div className="font-black text-xs md:text-sm uppercase tracking-tight truncate max-w-[80px] md:max-w-none">{order.customerName}</div>
-                      <div className="text-[8px] md:text-[10px] font-bold text-gray-400 truncate max-w-[80px] md:max-w-none">{order.customerPhone}</div>
+                      <div className="flex items-center gap-3">
+                        {order.paymentMethod === 'WHATSAPP' ? (
+                          <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0" title="WhatsApp Order">
+                            <WhatsAppIcon className="h-3 w-3 text-green-600" />
+                          </div>
+                        ) : (
+                          <div className="bg-blue-100 p-1.5 rounded-full flex-shrink-0" title="Website Order">
+                            <Globe className="h-3 w-3 text-blue-600" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-black text-xs md:text-sm uppercase tracking-tight truncate max-w-[80px] md:max-w-none">{order.customerName}</div>
+                          <div className="text-[8px] md:text-[10px] font-bold text-gray-400 truncate max-w-[80px] md:max-w-none">{order.customerPhone}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-3 md:p-5 font-black text-xs md:text-sm">{settings.currencySymbol}{order.total.toFixed(2)}</td>
                     <td className="p-3 md:p-5">{getStatusBadge(order.status)}</td>
