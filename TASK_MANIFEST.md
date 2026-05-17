@@ -37,7 +37,7 @@
 
 ---
 
-### [IN-TESTING] Task 2: Fix Shipping Charges Consistency
+### [COMPLETED] Task 2: Fix Shipping Charges Consistency
 - **Date**: 2026-05-17
 - **Branch**: `fix/shipping-charges-consistency`
 - **Description**: Resolved the issue where shipping was hardcoded as "FREE" in the cart and checkout despite being set differently in the dashboard.
