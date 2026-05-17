@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Globe, Shield, CreditCard, MessageSquare, Bell, User, Truck, ShieldCheck, RotateCcw, Zap, Gift, BadgeCheck, CreditCard as CreditCardIcon, Plus, Trash2, Instagram, Facebook, Youtube, Twitter, Linkedin } from 'lucide-react';
+import { Globe, Shield, CreditCard, MessageSquare, Bell, User, Truck, ShieldCheck, RotateCcw, Zap, Gift, BadgeCheck, CreditCard as CreditCardIcon, Plus, Trash2, Instagram, Facebook, Youtube, Twitter, Linkedin, Upload, X, Loader2 } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FeatureIcon, SocialLink, StoreFeature } from '@/types';
 import { DashboardInstallCard } from '@/components/pwa/DashboardInstallCard';
+import { optimizeImage } from '@/lib/imageUtils';
 
 export const GeneralSettings: React.FC = () => {
   const { settings, updateSettings } = useShop();
@@ -419,11 +420,16 @@ export const GeneralSettings: React.FC = () => {
               </div>
 
               {/* Bank Transfer */}
-              <div className="space-y-4 p-4 border border-gray-100 rounded-3xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold">Bank Transfer</h4>
-                    <p className="text-xs text-gray-500">Manual verification of bank deposits</p>
+              <div className="space-y-4 p-5 border border-gray-100 rounded-[2rem] bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-50 p-2 rounded-2xl">
+                      <CreditCardIcon className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-black uppercase text-sm tracking-tight">Bank Transfer & Digital Wallets</h4>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest leading-none mt-0.5">Semi-automatic verification of receipts</p>
+                    </div>
                   </div>
                   <Switch 
                     checked={settings.paymentSettings?.bankTransfer?.enabled || false}
@@ -433,16 +439,186 @@ export const GeneralSettings: React.FC = () => {
                   />
                 </div>
                 {settings.paymentSettings?.bankTransfer?.enabled && (
-                  <div className="grid gap-2 pt-2">
-                    <Label className="text-[10px] uppercase font-black opacity-50">Account Details</Label>
-                    <Textarea 
-                      value={settings.paymentSettings?.bankTransfer?.accountDetails || ''}
-                      onChange={(e) => handleUpdate({ 
-                        paymentSettings: { ...settings.paymentSettings, bankTransfer: { ...settings.paymentSettings?.bankTransfer, accountDetails: e.target.value } } 
-                      })}
-                      placeholder="Enter Bank Name, Account Number, etc."
-                      className="rounded-xl min-h-[80px] text-xs"
-                    />
+                  <div className="space-y-5 pt-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-2xl">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-800 mb-1">💡 Smart Verification Guidance</p>
+                      <p className="text-[10px] text-amber-700 leading-relaxed">
+                        Our semi-automatic payment verification uses client-side OCR technology. Please enter your account information exactly. This data will be shown to your customer at checkout, and our automated scanner will scan their uploaded receipt for your Bank Name, Account Number, and the Order Total to verify the payment instantly.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">Account Title *</Label>
+                        <Input 
+                          value={settings.paymentSettings?.bankTransfer?.accountTitle || ''}
+                          onChange={(e) => handleUpdate({ 
+                            paymentSettings: { 
+                              ...settings.paymentSettings, 
+                              bankTransfer: { ...settings.paymentSettings?.bankTransfer, accountTitle: e.target.value } 
+                            } 
+                          })}
+                          placeholder="e.g. Aura Bloom Cosmetics"
+                          className="rounded-xl h-11 text-sm border-gray-200"
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">Bank or Wallet Name *</Label>
+                        <div className="flex gap-2">
+                          <Select 
+                            value={settings.paymentSettings?.bankTransfer?.bankName || ''} 
+                            onValueChange={(value) => handleUpdate({ 
+                              paymentSettings: { 
+                                ...settings.paymentSettings, 
+                                bankTransfer: { ...settings.paymentSettings?.bankTransfer, bankName: value } 
+                              } 
+                            })}
+                          >
+                            <SelectTrigger className="rounded-xl h-11 text-sm border-gray-200 w-full">
+                              <SelectValue placeholder="Select bank/wallet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['Meezan Bank', 'SadaPay', 'EasyPaisa', 'JazzCash', 'NayaPay', 'HBL', 'Bank Al Habib', 'UBL', 'MCB', 'Allied Bank', 'Standard Chartered', 'Dubai Islamic'].map((bank) => (
+                                <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                              ))}
+                              <SelectItem value="Custom">Custom / Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {settings.paymentSettings?.bankTransfer?.bankName === 'Custom' && (
+                      <div className="grid gap-2 animate-in fade-in duration-200">
+                        <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">Enter Custom Bank Name *</Label>
+                        <Input 
+                          value={settings.paymentSettings?.bankTransfer?.accountDetails || ''}
+                          onChange={(e) => handleUpdate({ 
+                            paymentSettings: { 
+                              ...settings.paymentSettings, 
+                              bankTransfer: { 
+                                ...settings.paymentSettings?.bankTransfer, 
+                                accountDetails: e.target.value,
+                                bankName: 'Custom'
+                              } 
+                            } 
+                          })}
+                          placeholder="e.g. Bank Al-Falah"
+                          className="rounded-xl h-11 text-sm border-gray-200"
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">Account or Wallet Number *</Label>
+                        <Input 
+                          value={settings.paymentSettings?.bankTransfer?.accountNumber || ''}
+                          onChange={(e) => handleUpdate({ 
+                            paymentSettings: { 
+                              ...settings.paymentSettings, 
+                              bankTransfer: { ...settings.paymentSettings?.bankTransfer, accountNumber: e.target.value } 
+                            } 
+                          })}
+                          placeholder="e.g. 0283-01048-2830"
+                          className="rounded-xl h-11 text-sm border-gray-200 font-mono"
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">IBAN (Optional)</Label>
+                        <Input 
+                          value={settings.paymentSettings?.bankTransfer?.iban || ''}
+                          onChange={(e) => handleUpdate({ 
+                            paymentSettings: { 
+                              ...settings.paymentSettings, 
+                              bankTransfer: { ...settings.paymentSettings?.bankTransfer, iban: e.target.value.toUpperCase() } 
+                            } 
+                          })}
+                          placeholder="e.g. PK22MEZN000283010482830"
+                          className="rounded-xl h-11 text-sm border-gray-200 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">QR Code (Optional)</Label>
+                      <div className="flex gap-4 items-center">
+                        <div className="flex-1 relative">
+                          <Input 
+                            placeholder="QR Code Image URL or upload" 
+                            value={settings.paymentSettings?.bankTransfer?.qrCodeUrl || ''}
+                            onChange={(e) => handleUpdate({ 
+                              paymentSettings: { 
+                                ...settings.paymentSettings, 
+                                bankTransfer: { ...settings.paymentSettings?.bankTransfer, qrCodeUrl: e.target.value } 
+                              } 
+                            })}
+                            className="rounded-xl h-11 text-sm border-gray-200 pr-10"
+                          />
+                          <label className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
+                            <Upload className="h-4 w-4 text-gray-400" />
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  const optimized = await optimizeImage(file, 600, 600);
+                                  handleUpdate({
+                                    paymentSettings: {
+                                      ...settings.paymentSettings,
+                                      bankTransfer: {
+                                        ...settings.paymentSettings?.bankTransfer,
+                                        qrCodeUrl: optimized
+                                      }
+                                    }
+                                  });
+                                } catch (error) {
+                                  console.error('Failed to compress QR Code image:', error);
+                                }
+                              }} 
+                            />
+                          </label>
+                        </div>
+                        {settings.paymentSettings?.bankTransfer?.qrCodeUrl && (
+                          <div className="relative group shrink-0">
+                            <div className="w-11 h-11 border rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center shadow-sm">
+                              <img src={settings.paymentSettings?.bankTransfer?.qrCodeUrl} className="max-w-full max-h-full object-cover" />
+                            </div>
+                            <button 
+                              onClick={() => handleUpdate({ 
+                                paymentSettings: { 
+                                  ...settings.paymentSettings, 
+                                  bankTransfer: { ...settings.paymentSettings?.bankTransfer, qrCodeUrl: '' } 
+                                } 
+                              })}
+                              className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-2 w-2" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-black uppercase text-gray-400 pl-1">Payment Instructions / Notes</Label>
+                      <Textarea 
+                        value={settings.paymentSettings?.bankTransfer?.instructions || ''}
+                        onChange={(e) => handleUpdate({ 
+                          paymentSettings: { 
+                            ...settings.paymentSettings, 
+                            bankTransfer: { ...settings.paymentSettings?.bankTransfer, instructions: e.target.value } 
+                          } 
+                        })}
+                        placeholder="e.g. Please transfer the total amount to the provided details and upload a clear screenshot of your confirmation screen or receipt. Verification will take less than 10 seconds."
+                        className="rounded-2xl min-h-[80px] text-sm border-gray-200"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

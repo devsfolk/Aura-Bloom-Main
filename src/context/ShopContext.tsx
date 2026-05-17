@@ -75,7 +75,16 @@ const DEFAULT_SETTINGS: ThemeSettings = {
   paymentSettings: {
     stripe: { enabled: false, apiKey: '', secretKey: '' },
     paypal: { enabled: false, clientId: '' },
-    bankTransfer: { enabled: false, accountDetails: '' },
+    bankTransfer: { 
+      enabled: false, 
+      accountDetails: '',
+      accountTitle: '',
+      bankName: '',
+      accountNumber: '',
+      iban: '',
+      qrCodeUrl: '',
+      instructions: ''
+    },
     cod: { enabled: true },
   },
   analytics: {
@@ -238,8 +247,22 @@ const mergeSettings = (raw?: Partial<ThemeSettings> | null): ThemeSettings => ({
   secondaryColor: sanitizeColorValue(raw?.secondaryColor, DEFAULT_SETTINGS.secondaryColor),
   backgroundColor: sanitizeColorValue(raw?.backgroundColor, DEFAULT_SETTINGS.backgroundColor),
   paymentSettings: {
-    ...DEFAULT_SETTINGS.paymentSettings,
-    ...(raw?.paymentSettings || {}),
+    stripe: {
+      ...DEFAULT_SETTINGS.paymentSettings.stripe,
+      ...(raw?.paymentSettings?.stripe || {}),
+    },
+    paypal: {
+      ...DEFAULT_SETTINGS.paymentSettings.paypal,
+      ...(raw?.paymentSettings?.paypal || {}),
+    },
+    bankTransfer: {
+      ...DEFAULT_SETTINGS.paymentSettings.bankTransfer,
+      ...(raw?.paymentSettings?.bankTransfer || {}),
+    },
+    cod: {
+      ...DEFAULT_SETTINGS.paymentSettings.cod,
+      ...(raw?.paymentSettings?.cod || {}),
+    },
   },
   analytics: {
     ...DEFAULT_SETTINGS.analytics,
@@ -1062,16 +1085,28 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     mode: 'WHATSAPP' | 'WEBSITE',
     paymentMethod?: string,
   ) => {
+    const effectivePaymentMethod = mode === 'WHATSAPP' ? 'WHATSAPP' : paymentMethod;
+
+    let initialStatus: Order['status'] = 'PENDING';
+    if (effectivePaymentMethod) {
+      try {
+        const parsed = JSON.parse(effectivePaymentMethod);
+        if (parsed.method === 'bank' && parsed.verified) {
+          initialStatus = 'PROCESSING';
+        }
+      } catch {
+        // Safe ignore
+      }
+    }
+
     const newOrder: Order = {
       id: createId('ord'),
       ...customerData,
       items: cart,
       total: cartTotal,
-      status: 'PENDING',
+      status: initialStatus,
       createdAt: Date.now(),
     };
-
-    const effectivePaymentMethod = mode === 'WHATSAPP' ? 'WHATSAPP' : paymentMethod;
 
     const updatedOrders = [newOrder, ...orders];
     const updatedProducts = products.map((product) => {
