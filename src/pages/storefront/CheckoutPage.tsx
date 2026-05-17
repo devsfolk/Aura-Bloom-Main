@@ -41,9 +41,7 @@ export const CheckoutPage: React.FC = () => {
     }
 
     placeOrder(formData, mode, paymentMethod);
-    if (mode === 'WEBSITE') {
-      setIsSuccess(true);
-    }
+    setIsSuccess(true);
   };
 
   if (isSuccess) {

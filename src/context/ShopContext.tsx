@@ -935,7 +935,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
 
     if (supabase) {
-      void supabase.from('orders').update({ status }).eq('id', id);
+      void (async () => {
+        const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+        if (error) {
+          console.error('Failed to update order status:', error.message);
+        }
+      })();
     }
   };
 
@@ -1065,33 +1070,33 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: Date.now(),
     };
 
-    if (mode === 'WEBSITE') {
-      const updatedOrders = [newOrder, ...orders];
-      const updatedProducts = products.map((product) => {
-        const cartItem = cart.find((item) => item.productId === product.id);
-        return cartItem ? { ...product, stock: Math.max(0, product.stock - cartItem.quantity) } : product;
-      });
+    const effectivePaymentMethod = mode === 'WHATSAPP' ? 'WHATSAPP' : paymentMethod;
 
-      setOrders(updatedOrders);
-      setProducts(updatedProducts);
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updatedProducts));
-      localStorage.setItem(
-        PENDING_ORDERS_STORAGE_KEY,
-        JSON.stringify([
-          ...readLocalJson<PendingWebsiteOrder[]>(PENDING_ORDERS_STORAGE_KEY, []).filter((entry) => entry.order.id !== newOrder.id),
-          { order: newOrder, paymentMethod },
-        ]),
+    const updatedOrders = [newOrder, ...orders];
+    const updatedProducts = products.map((product) => {
+      const cartItem = cart.find((item) => item.productId === product.id);
+      return cartItem ? { ...product, stock: Math.max(0, product.stock - cartItem.quantity) } : product;
+    });
+
+    setOrders(updatedOrders);
+    setProducts(updatedProducts);
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updatedProducts));
+    localStorage.setItem(
+      PENDING_ORDERS_STORAGE_KEY,
+      JSON.stringify([
+        ...readLocalJson<PendingWebsiteOrder[]>(PENDING_ORDERS_STORAGE_KEY, []).filter((entry) => entry.order.id !== newOrder.id),
+        { order: newOrder, paymentMethod: effectivePaymentMethod },
+      ]),
+    );
+
+    if (supabase) {
+      void flushPendingOrdersToSupabase();
+      void Promise.all(
+        updatedProducts.map((product) => supabase.from('products').update({ stock: product.stock }).eq('id', product.id)),
       );
-
-      if (supabase) {
-        void flushPendingOrdersToSupabase();
-        void Promise.all(
-          updatedProducts.map((product) => supabase.from('products').update({ stock: product.stock }).eq('id', product.id)),
-        );
-        if (isAdmin) {
-          void syncOrdersFromSupabase();
-        }
+      if (isAdmin) {
+        void syncOrdersFromSupabase();
       }
     }
 

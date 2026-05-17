@@ -51,7 +51,7 @@
 
 ## Current Active Task
 
-### [IN-PROGRESS] Task 3.1: Fix WhatsApp Icon and Redirect
+### [COMPLETED] Task 3.1: Fix WhatsApp Icon and Redirect
 - **Date**: 2026-05-17
 - **Branch**: `fix/whatsapp-icon-and-redirect`
 - **Description**: Replaced generic icon with a custom WhatsApp SVG and added auto-formatting for phone numbers to redirect to WhatsApp.
@@ -60,3 +60,15 @@
   - `src/components/layout/StoreLayout.tsx`: Added formatSocialUrl to auto-convert phone numbers to wa.me links. Used custom icon.
   - `src/pages/dashboard/GeneralSettings.tsx`: Used custom icon in the preview.
 - **Verification**: The user should verify the real WhatsApp icon appears and clicking it redirects to WhatsApp even if they just typed a phone number.
+
+---
+
+## Current Active Task
+
+### [IN-PROGRESS] Task 4: Fix WhatsApp Orders Saving & Dashboard Status Updates
+- **Date**: 2026-05-17
+- **Branch**: `feat/dashboard-orders-whatsapp`
+- **Description**: Ensure WhatsApp orders are saved to the dashboard before redirecting, and fix the order status update dropdown in the dashboard.
+- **Files Modified**: 
+  - (Will be updated)
+- **Verification**: User should place a WhatsApp order and see it in the dashboard. User should change an order status in the dashboard and see it persist.
