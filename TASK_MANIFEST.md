@@ -93,8 +93,8 @@
   - `src/pages/storefront/CheckoutPage.tsx`: Designed an interactive Bank Transfer expansion box with copy features, dynamic Tesseract engine loader, canvas compression, laser-scan visualizer, auto-verification result cards, and lightbox preview.
   - `src/pages/dashboard/OrdersPage.tsx`: Updated presentation cards, added shield badging, auto-verified vs manual review labels, lightbox zoomed views, and a one-click manual payment approval action.
 - **Vercel Sandbox URLs**:
-  - Storefront: [https://aurabloom-git-feat-semi-automatic-bank-transfer-payment-devsfolks-projects.vercel.app](https://aurabloom-git-feat-semi-automatic-bank-transfer-payment-devsfolks-projects.vercel.app)
-  - Dashboard: [https://aurabloom-git-feat-semi-automatic-bank-transfer-payment-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-semi-automatic-bank-transfer-payment-devsfolks-projects.vercel.app/dashboard)
+  - Storefront: [https://aurabloom-git-feat-semi-automatic-ban-e39ad7-devsfolks-projects.vercel.app](https://aurabloom-git-feat-semi-automatic-ban-e39ad7-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-feat-semi-automatic-ban-e39ad7-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-semi-automatic-ban-e39ad7-devsfolks-projects.vercel.app/dashboard)
 - **Verification**: Verified settings inputs, client-side OCR upload and verification flow, admin table view shield badging, manual review/paid visual labels, details screenshot preview with custom lightbox zoom, and order status updates are all working perfectly.
 
 ---
