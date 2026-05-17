@@ -164,7 +164,7 @@ export interface Order {
   customerAddress: string;
   items: OrderItem[];
   total: number;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED' | 'ABANDONED';
   createdAt: number;
   paymentMethod?: string;
 }

@@ -51,7 +51,7 @@ create table if not exists public.orders (
   customer_address text not null,
   items jsonb not null default '[]'::jsonb,
   total numeric(12, 2) not null,
-  status text not null check (status in ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED')),
+  status text not null check (status in ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'ABANDONED')),
   payment_method text,
   created_at bigint not null
 );

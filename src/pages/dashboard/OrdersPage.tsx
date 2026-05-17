@@ -32,6 +32,8 @@ export const OrdersPage: React.FC = () => {
         return <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border-none font-black uppercase text-[8px] tracking-widest"><CheckCircle className="h-2.5 w-2.5 mr-1" /> Completed</Badge>;
       case 'CANCELLED':
         return <Badge className="bg-red-50 text-red-600 hover:bg-red-50 border-none font-black uppercase text-[8px] tracking-widest"><XCircle className="h-2.5 w-2.5 mr-1" /> Cancelled</Badge>;
+      case 'ABANDONED':
+        return <Badge className="bg-gray-100 text-gray-500 hover:bg-gray-100 border-none font-black uppercase text-[8px] tracking-widest"><XCircle className="h-2.5 w-2.5 mr-1" /> Abandoned</Badge>;
       default:
         return <Badge className="font-black uppercase text-[8px] tracking-widest">{status}</Badge>;
     }
@@ -146,7 +148,7 @@ export const OrdersPage: React.FC = () => {
                   <div>
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Update Status</h3>
                     <div className="flex flex-wrap gap-2">
-                       {['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'].map((s) => (
+                       {['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'ABANDONED'].map((s) => (
                          <Button 
                           key={s}
                           variant={selectedOrder.status === s ? 'default' : 'outline'}
