@@ -146,6 +146,25 @@
   - Dashboard: [https://aurabloom-git-feat-devsfolk-theme-controls-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-devsfolk-theme-controls-devsfolks-projects.vercel.app/dashboard)
 - **Verification**: Verified separate color parameters update storefront layers dynamically. Verified selecting aspect ratios and initial counts in Desktop/Tablet/Mobile sub-tabs updates only the corresponding device viewport view layout flawlessly.
 
+### [COMPLETED] Task 9: DevsFolk Enterprise Project Rebranding & Storefront Promotion Footer Link
+- **Date**: 2026-05-18
+- **Branch**: `feat/project-branding-devsfolk`
+- **Description**: Rebranded the "OmniStore" multi-business project framework to "DevsFolk". Removed the obsolete "OmniStore" prefix and key identifiers throughout code configurations and cache files, replacing them with the secure "devsfolk" namespace. Implemented clean backward compatibility fallback for user local cache migration. Added a premium, modern "Powered by DevsFolk" promotional link in the storefront footer to build customer trust and promote company branding.
+- **Files Modified**: 
+  - `metadata.json`: Updated system descriptor name attribute to "DevsFolk".
+  - `package.json`: Renamed React application workspace to devsfolk.
+  - `src/pages/dashboard/OrdersPage.tsx`: Renamed push alert system notification source to DevsFolk.
+  - `src/main.tsx`: Realigned local cache-reset version keys to `devsfolk-`.
+  - `public/sw.js`: Realigned service worker PWA shell and runtime cache variables to devsfolk namespace.
+  - `src/context/ShopContext.tsx`: Renamed local storage storage keys to `devsfolk_` and upgraded the local JSON cache reader with a seamless legacy cache migration utility.
+  - `src/components/analytics/AnalyticsTracker.tsx`: Refactored script elements with devsfolk analytics attributes.
+  - `src/components/layout/StoreLayout.tsx`: Injected a premium, responsive "Powered by DevsFolk" uppercase branding link to the footer with horizontal separation pipe.
+  - `README.md` & `PROJECT_DOCUMENTATION.md`: Updated documentation overview headers, descriptions, and repository URLs.
+- **Vercel Sandbox URLs**:
+  - Storefront: [https://aurabloom-git-feat-project-branding-devsfolk-devsfolks-projects.vercel.app](https://aurabloom-git-feat-project-branding-devsfolk-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-feat-project-branding-devsfolk-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-project-branding-devsfolk-devsfolks-projects.vercel.app/dashboard)
+- **Verification**: Verified npm build outputs compile under devsfolk. Verified footer links redirect correctly to the home promotion domain. Verified console logs report devsfolk syncer messages, and push notification triggers report new orders under DevsFolk branding without legacy cache data loss.
+
 ---
 
 ## Current Active Task
