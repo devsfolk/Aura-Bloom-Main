@@ -3,13 +3,133 @@ import { useShop } from '@/context/ShopContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Eye, CheckCircle, XCircle, Clock, ChevronLeft, Globe } from 'lucide-react';
+import { ShoppingBag, Eye, CheckCircle, XCircle, Clock, ChevronLeft, Globe, Landmark, ShieldAlert, ShieldCheck, Check, AlertCircle, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { supabase } from '@/lib/supabase';
+
+const parsePaymentMethod = (methodStr: string | null | undefined) => {
+  if (!methodStr) return { method: 'COD', verified: false, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'WHATSAPP') return { method: 'WHATSAPP', verified: false, receiptUrl: '', source: 'WHATSAPP' };
+  if (methodStr === 'stripe') return { method: 'stripe', verified: true, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'paypal') return { method: 'paypal', verified: true, receiptUrl: '', source: 'WEBSITE' };
+  if (methodStr === 'cod') return { method: 'COD', verified: false, receiptUrl: '', source: 'WEBSITE' };
+  
+  try {
+    const parsed = JSON.parse(methodStr);
+    return {
+      method: parsed.method || 'bank',
+      verified: parsed.verified || false,
+      receiptUrl: parsed.receiptUrl || '',
+      bankName: parsed.bankName || '',
+      autoVerified: parsed.autoVerified || false,
+      source: parsed.source || 'WEBSITE'
+    };
+  } catch {
+    return { method: methodStr, verified: false, receiptUrl: '', source: 'WEBSITE' };
+  }
+};
 
 export const OrdersPage: React.FC = () => {
   const { orders, settings, updateOrderStatus, refreshOrders } = useShop();
   const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
+  const [zoomReceiptUrl, setZoomReceiptUrl] = React.useState<string | null>(null);
+  const [activeToast, setActiveToast] = React.useState<any | null>(null);
+  const prevOrdersRef = React.useRef<any[]>([]);
+
+  // Synthesize double telephone-buzz chime using HTML5 Web Audio API
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const playTone = (time: number, freq1: number, freq2: number, duration: number) => {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        
+        osc1.frequency.setValueAtTime(freq1, time);
+        osc2.frequency.setValueAtTime(freq2, time);
+        
+        // Ringing amplitude envelope
+        gainNode.gain.setValueAtTime(0, time);
+        gainNode.gain.linearRampToValueAtTime(0.35, time + 0.04);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc1.start(time);
+        osc2.start(time);
+        
+        osc1.stop(time + duration);
+        osc2.stop(time + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Cycle 1
+      playTone(now, 853, 857, 0.18);
+      playTone(now + 0.22, 853, 857, 0.18);
+      playTone(now + 0.44, 853, 857, 0.42);
+      
+      // Cycle 2
+      playTone(now + 0.9, 853, 857, 0.18);
+      playTone(now + 1.12, 853, 857, 0.18);
+      playTone(now + 1.34, 853, 857, 0.42);
+    } catch (err) {
+      console.error('Notification audio failed:', err);
+    }
+  };
+
+  // Request browser Notification permission
+  React.useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      void Notification.requestPermission();
+    }
+  }, []);
+
+  // Monitor order list and trigger alerts on new orders (regardless of status)
+  React.useEffect(() => {
+    if (orders.length > 0) {
+      if (prevOrdersRef.current.length > 0) {
+        const newOrders = orders.filter(
+          (o) => !prevOrdersRef.current.some((prev) => prev.id === o.id)
+        );
+
+        if (newOrders.length > 0) {
+          const latestOrder = newOrders[0];
+          
+          // Ring audio sound
+          playNotificationSound();
+          
+          // Vibrate phone & show push notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('🚨 New Order Received! (DevsFolk OmniStore)', {
+                body: `Customer: ${latestOrder.customerName}\nTotal: ${settings.currencySymbol}${latestOrder.total.toFixed(2)}\nPlatform: ${latestOrder.paymentMethod === 'WHATSAPP' ? 'WhatsApp' : 'Website'}`,
+                icon: '/favicon.ico',
+                vibrate: [200, 100, 200, 100, 200]
+              });
+            } catch (err) {
+              console.error('System push alert trigger error:', err);
+            }
+          }
+
+          // Show floating toast
+          setActiveToast(latestOrder);
+          setTimeout(() => {
+            setActiveToast(null);
+          }, 8000);
+        }
+      }
+      prevOrdersRef.current = orders;
+    }
+  }, [orders, settings.currencySymbol]);
 
   React.useEffect(() => {
     void refreshOrders();
@@ -69,44 +189,65 @@ export const OrdersPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-3 md:p-5 font-mono text-[8px] md:text-[10px] opacity-40">{order.id}</td>
-                    <td className="p-3 md:p-5">
-                      <div className="flex items-center gap-3">
-                        {order.paymentMethod === 'WHATSAPP' ? (
-                          <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0" title="WhatsApp Order">
-                            <WhatsAppIcon className="h-3 w-3 text-green-600" />
+                orders.map((order) => {
+                  const paymentInfo = parsePaymentMethod(order.paymentMethod);
+                  
+                  // Platform source icon (WhatsApp vs Globe Website)
+                  const isWhatsAppSource = order.paymentMethod === 'WHATSAPP' || paymentInfo.source === 'WHATSAPP';
+                  const sourceIcon = isWhatsAppSource ? (
+                    <div className="bg-green-50 p-2 rounded-xl flex-shrink-0 shadow-sm" title="WhatsApp Order">
+                      <WhatsAppIcon className="h-3.5 w-3.5 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0 shadow-sm" title="Website Order">
+                      <Globe className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                  );
+                  
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-3 md:p-5 font-mono text-[8px] md:text-[10px] opacity-40">{order.id}</td>
+                      <td className="p-3 md:p-5">
+                        <div className="flex items-center gap-3">
+                          {sourceIcon}
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-black text-xs md:text-sm uppercase tracking-tight truncate max-w-[80px] md:max-w-none">{order.customerName}</span>
+                              {paymentInfo.method === 'bank' && (
+                                paymentInfo.verified ? (
+                                  <span className="text-[7px] font-black bg-emerald-50 text-emerald-700 uppercase px-1.5 py-0.5 rounded border border-emerald-100 leading-none flex items-center gap-1 shrink-0">
+                                    <ShieldCheck className="h-2.5 w-2.5 text-emerald-600 animate-pulse" /> Paid
+                                  </span>
+                                ) : (
+                                  <span className="text-[7px] font-black bg-amber-50 text-amber-700 uppercase px-1.5 py-0.5 rounded border border-amber-100 leading-none animate-pulse flex items-center gap-1 shrink-0">
+                                    <ShieldAlert className="h-2.5 w-2.5 text-amber-600" /> Review
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            <div className="text-[8px] md:text-[10px] font-bold text-gray-400 truncate max-w-[80px] md:max-w-none">{order.customerPhone}</div>
                           </div>
-                        ) : (
-                          <div className="bg-blue-100 p-1.5 rounded-full flex-shrink-0" title="Website Order">
-                            <Globe className="h-3 w-3 text-blue-600" />
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-black text-xs md:text-sm uppercase tracking-tight truncate max-w-[80px] md:max-w-none">{order.customerName}</div>
-                          <div className="text-[8px] md:text-[10px] font-bold text-gray-400 truncate max-w-[80px] md:max-w-none">{order.customerPhone}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-3 md:p-5 font-black text-xs md:text-sm">{settings.currencySymbol}{order.total.toFixed(2)}</td>
-                    <td className="p-3 md:p-5">{getStatusBadge(order.status)}</td>
-                    <td className="p-3 md:p-5 text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
-                      {new Date(order.createdAt).toLocaleDateString()} <br />
-                      <span className="text-[7px] md:text-[8px] opacity-70">{new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </td>
-                    <td className="p-3 md:p-5 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="rounded-xl h-8 md:h-9 hover:bg-gray-100 font-bold text-[8px] md:text-[10px] uppercase"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        <Eye className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1.5 md:mr-2" /> View
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="p-3 md:p-5 font-black text-xs md:text-sm">{settings.currencySymbol}{order.total.toFixed(2)}</td>
+                      <td className="p-3 md:p-5">{getStatusBadge(order.status)}</td>
+                      <td className="p-3 md:p-5 text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                        {new Date(order.createdAt).toLocaleDateString()} <br />
+                        <span className="text-[7px] md:text-[8px] opacity-70">{new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      </td>
+                      <td className="p-3 md:p-5 text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="rounded-xl h-8 md:h-9 hover:bg-gray-100 font-bold text-[8px] md:text-[10px] uppercase"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <Eye className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1.5 md:mr-2" /> View
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -145,6 +286,85 @@ export const OrdersPage: React.FC = () => {
                       </p>
                     </div>
                   )}
+
+                  {(() => {
+                    const paymentInfo = parsePaymentMethod(selectedOrder.paymentMethod);
+                    if (paymentInfo.method !== 'bank') return null;
+                    
+                    return (
+                      <div className="space-y-4 animate-in fade-in duration-200">
+                        <div className={`p-4 rounded-2xl border ${paymentInfo.verified ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100 animate-pulse'}`}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-gray-500">Bank Transfer Details</span>
+                            <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${paymentInfo.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {paymentInfo.verified ? 'Paid & Verified' : 'Awaiting Verification'}
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                            <div>
+                              <span className="text-[8px] font-black uppercase text-gray-400 block leading-none">Bank Name</span>
+                              <span className="font-bold text-gray-800">{paymentInfo.bankName || 'Direct Transfer'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[8px] font-black uppercase text-gray-400 block leading-none">Verification Mode</span>
+                              <span className="font-bold text-gray-800">{paymentInfo.autoVerified ? '⚡ Automated OCR' : '👤 Manual Review'}</span>
+                            </div>
+                          </div>
+
+                          {paymentInfo.receiptUrl && (
+                            <div className="space-y-2">
+                              <span className="text-[8px] font-black uppercase text-gray-400 block leading-none">Attached Receipt Screenshot</span>
+                              <div 
+                                className="relative aspect-video w-full max-w-[240px] bg-white rounded-xl overflow-hidden border border-gray-200 cursor-pointer shadow-sm group"
+                                onClick={() => setZoomReceiptUrl(paymentInfo.receiptUrl)}
+                              >
+                                <img src={paymentInfo.receiptUrl} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                  <Eye className="h-5 w-5 animate-pulse" />
+                                </div>
+                              </div>
+                              <span className="text-[9px] text-gray-400 font-bold block">Click receipt to enlarge</span>
+                            </div>
+                          )}
+
+                          {!paymentInfo.verified && (
+                            <Button
+                              type="button"
+                              className="w-full mt-3 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-100"
+                              onClick={async () => {
+                                const updatedPaymentMethod = JSON.stringify({
+                                  ...paymentInfo,
+                                  verified: true
+                                });
+                                
+                                // Update Supabase if config is loaded
+                                if (supabase) {
+                                  await supabase.from('orders').update({
+                                    status: 'PROCESSING',
+                                    payment_method: updatedPaymentMethod
+                                  }).eq('id', selectedOrder.id);
+                                }
+                                
+                                // Update local ShopContext order state
+                                updateOrderStatus(selectedOrder.id, 'PROCESSING');
+                                
+                                // Update local modal state to instantly visual refresh
+                                setSelectedOrder({
+                                  ...selectedOrder,
+                                  status: 'PROCESSING',
+                                  paymentMethod: updatedPaymentMethod
+                                });
+                              }}
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                              <span>Approve & Confirm Payment</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div>
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Customer Information</h3>
                     <div className="space-y-1">
@@ -222,6 +442,67 @@ export const OrdersPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Lightbox Receipt Zoom Modal */}
+      {zoomReceiptUrl && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setZoomReceiptUrl(null)}
+        >
+          <div className="relative max-w-xl w-full bg-white rounded-[2rem] overflow-hidden p-6 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setZoomReceiptUrl(null)}
+              className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4 text-black" />
+            </button>
+            <h4 className="font-black uppercase tracking-wider text-xs text-gray-400 mb-4">Receipt Image Zoom</h4>
+            <div className="bg-gray-50 rounded-2xl overflow-hidden flex items-center justify-center max-h-[75vh]">
+              <img 
+                src={zoomReceiptUrl} 
+                alt="Receipt Zoom" 
+                className="max-w-full max-h-full object-contain" 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Real-Time Order Toast Notification */}
+      {activeToast && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-sm w-full bg-black/90 backdrop-blur-md text-white rounded-[2rem] p-6 shadow-2xl border border-white/10 animate-in slide-in-from-top-12 fade-in duration-300">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center shrink-0 animate-pulse shadow-lg shadow-red-500/30">
+              <ShoppingBag className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-black uppercase tracking-widest text-red-500 leading-none">🚨 Real-time Order Alert</span>
+                <button 
+                  onClick={() => setActiveToast(null)}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <h5 className="font-black text-sm uppercase tracking-tight">{activeToast.customerName} placed a new order!</h5>
+              <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+                Total: <strong>{settings.currencySymbol}{activeToast.total.toFixed(2)}</strong> via {activeToast.paymentMethod === 'WHATSAPP' ? 'WhatsApp' : 'Website'}.
+              </p>
+              <Button 
+                size="sm" 
+                className="w-full mt-3 rounded-xl bg-white hover:bg-gray-100 text-black border-none font-bold text-[9px] uppercase tracking-wider h-8"
+                onClick={() => {
+                  setSelectedOrder(activeToast);
+                  setActiveToast(null);
+                }}
+              >
+                <Eye className="h-3 w-3 mr-1.5" /> View Details
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

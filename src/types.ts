@@ -6,7 +6,15 @@ export interface PaymentGateway {
   clientId?: string;
   secretKey?: string;
   accountDetails?: string;
+  // Rich Bank Transfer Details
+  accountTitle?: string;
+  bankName?: string;
+  accountNumber?: string;
+  iban?: string;
+  qrCodeUrl?: string;
+  instructions?: string;
 }
+
 
 export interface PaymentSettings {
   stripe: PaymentGateway;
