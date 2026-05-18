@@ -44,6 +44,7 @@ const DesignSettings = lazy(() =>
 );
 const OrdersPage = lazy(() => import('@/pages/dashboard/OrdersPage').then((module) => ({ default: module.OrdersPage })));
 const LoginPage = lazy(() => import('@/pages/dashboard/LoginPage').then((module) => ({ default: module.LoginPage })));
+const DevsTool = lazy(() => import('@/pages/dashboard/DevsTool').then((module) => ({ default: module.DevsTool })));
 
 const RouteFallback = () => <div className="min-h-screen bg-white" />;
 
@@ -74,6 +75,9 @@ export default function App() {
             <Route path="/dashboard/orders" element={<DashboardLayout><OrdersPage /></DashboardLayout>} />
             <Route path="/dashboard/design" element={<DashboardLayout><DesignSettings /></DashboardLayout>} />
             <Route path="/dashboard/settings" element={<DashboardLayout><GeneralSettings /></DashboardLayout>} />
+
+            {/* Developer Central Orchestration */}
+            <Route path="/devstool" element={<DevsTool />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
