@@ -160,13 +160,11 @@ export const CheckoutPage: React.FC = () => {
         matchedAlias
       );
 
-      // Determine verification outcome - Amount, Account Title, and Bank Name must match if configured!
+      // Determine verification outcome: Amount & Account Title are required for success.
+      // Bank Name is preferred but optional to accommodate Raast/IBFT transfers smoothly.
       const enforceTitle = !!cleanTitle;
-      const enforceBank = !!cleanBankName;
       
-      const isVerified = hasAmount && 
-                         (!enforceTitle || hasAccountTitle) && 
-                         (!enforceBank || hasBankName);
+      const isVerified = hasAmount && (!enforceTitle || hasAccountTitle);
 
       setTimeout(() => {
         setOcrProgress(100);
@@ -521,7 +519,7 @@ export const CheckoutPage: React.FC = () => {
                         <div className="relative z-10 space-y-4 w-full max-w-xs">
                           <Loader2 className="h-8 w-8 text-green-500 animate-spin mx-auto" />
                           <div className="space-y-1">
-                            <h6 className="font-bold text-sm uppercase tracking-widest text-green-500">DevsFolk AI Receipt Analyzer</h6>
+                            <h6 className="font-bold text-sm uppercase tracking-widest text-green-500">DevsFolk Payment Verification</h6>
                             <p className="text-xs text-gray-300 leading-relaxed font-medium">{ocrStatus}</p>
                           </div>
                           
@@ -583,7 +581,7 @@ export const CheckoutPage: React.FC = () => {
                         <div className="flex-1 space-y-1">
                           <h6 className="font-bold text-amber-900 text-sm uppercase tracking-wide">🔍 Receipt Attached Successfully</h6>
                           <p className="text-xs text-amber-800 leading-relaxed">
-                            Your screenshot was uploaded! We couldn't instantly parse the exact amount <strong>{settings.currencySymbol}{cartTotal.toFixed(2)}</strong> due to screenshot styling. Don't worry! Complete your order, and our team will verify it manually within minutes.
+                            Your screenshot was uploaded! We couldn't instantly parse the exact amount <strong>{settings.currencySymbol}{cartTotal.toFixed(2)}</strong> due to screenshot styling. Don't worry! Complete your order, and the DevsFolk Team will verify it manually within minutes.
                           </p>
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto">
