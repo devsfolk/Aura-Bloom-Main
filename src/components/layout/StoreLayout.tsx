@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
-import { ShoppingCart, Menu, Search, Store, ClipboardList, Globe, Instagram, Facebook, Youtube, Twitter, Linkedin } from 'lucide-react';
+import { ShoppingCart, Menu, Search, Store, History, Globe, Instagram, Facebook, Youtube, Twitter, Linkedin } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -185,7 +185,7 @@ export const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           <div className={`flex items-center gap-1 md:gap-3 ${isDevsFolk ? 'w-auto md:w-1/4 justify-end' : ''}`}>
             <Link to="/order-history" className="relative group" title="Order History">
               <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 md:h-10 md:w-10">
-                <ClipboardList className="h-5 w-5 md:h-6 md:w-6" />
+                <History className="h-5 w-5 md:h-6 md:w-6" />
               </Button>
             </Link>
             <Link to="/cart" className="relative group">

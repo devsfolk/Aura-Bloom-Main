@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useShop } from '@/context/ShopContext';
 import { Link } from 'react-router-dom';
 import { 
-  ClipboardList, 
+  History, 
   Search, 
   ArrowRight, 
   Package, 
@@ -181,258 +181,255 @@ export const OrderHistoryPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12 md:py-24">
-      {/* Page Header */}
-      <div className="text-center mb-16 max-w-2xl mx-auto">
-        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-100 shadow-sm">
-          <ClipboardList className="h-10 w-10 text-gray-500" />
+    <div className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
+      {/* Responsive Header Row */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 mb-12 border-b pb-8">
+        
+        {/* Left Side: Minimalistic Text */}
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 shadow-sm shrink-0">
+            <History className="h-6 w-6 text-gray-500" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black uppercase tracking-tight">Order History</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[9px] md:text-xs">
+              Review, track status, or easily repeat past orders.
+            </p>
+          </div>
         </div>
-        <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-4">Order History</h1>
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] md:text-xs">
-          Review, track status, or easily repeat past orders.
-        </p>
+
+        {/* Right Side: Find My Orders block with minimal spacing */}
+        <div className="w-full lg:max-w-md bg-gray-50 rounded-3xl p-5 border border-gray-100 shrink-0">
+          <div className="mb-3">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Find My Orders</h3>
+            <h4 className="text-xs font-black uppercase mt-0.5">Retrieve Orders</h4>
+            <p className="text-[9px] text-gray-400 mt-1 leading-normal">
+              Placed orders from another device? Enter your email address or phone number to retrieve and sync them here.
+            </p>
+          </div>
+
+          <form onSubmit={handleLookup} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <Input 
+                id="searchQuery"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Email or phone..."
+                className="pl-8 h-9 rounded-xl bg-white border-none shadow-sm text-[11px] focus-visible:ring-1 focus-visible:ring-black"
+                required
+              />
+            </div>
+            <Button 
+              type="submit"
+              disabled={isSearching}
+              className="h-9 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-sm flex items-center gap-1 shrink-0"
+              style={{
+                backgroundColor: settings.primaryColor,
+                color: 'var(--primary-foreground)',
+                borderColor: 'var(--primary-border)',
+              }}
+            >
+              {isSearching ? (
+                <RefreshCw className="h-3 w-3 animate-spin" />
+              ) : (
+                <span>Sync</span>
+              )}
+            </Button>
+          </form>
+
+          {/* Success/Error Alerts inside lookup block */}
+          <AnimatePresence>
+            {searchSuccessMsg && (
+              <motion.div 
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="mt-3 p-2 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2 text-[10px] text-emerald-700 font-medium"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                <span>{searchSuccessMsg}</span>
+              </motion.div>
+            )}
+
+            {searchErrorMsg && (
+              <motion.div 
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="mt-3 p-2 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-[10px] text-red-700 font-medium"
+              >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />
+                <span>{searchErrorMsg}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-        {/* Orders List Section */}
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-black uppercase tracking-wider pl-1">Your Orders ({customerOrders.length})</h2>
-          
-          {customerOrders.length === 0 ? (
-            <Card className="border-none shadow-sm bg-gray-50/50 rounded-3xl p-12 text-center">
-              <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-black uppercase tracking-tight mb-2">No Local Orders Found</h3>
-              <p className="text-xs text-gray-400 mb-6">You haven't placed any orders from this device yet, or they haven't synced.</p>
-              <Link to="/categories">
-                <Button 
-                  className="rounded-xl h-11 px-8 font-black uppercase tracking-widest text-[10px]"
-                  style={{ backgroundColor: settings.primaryColor }}
-                >
-                  Start Shopping
-                </Button>
-              </Link>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <AnimatePresence>
-                {customerOrders.map(order => {
-                  const isExpanded = !!expandedOrders[order.id];
-                  const payment = parsePaymentMethod(order.paymentMethod);
-                  
-                  return (
-                    <motion.div
-                      key={order.id}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 shadow-sm"
+      {/* Full Width Order History List (Centered for perfect readability) */}
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 pl-1">Your Orders ({customerOrders.length})</h2>
+        
+        {customerOrders.length === 0 ? (
+          <Card className="border-none shadow-sm bg-gray-50/50 rounded-3xl p-12 text-center">
+            <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-black uppercase tracking-tight mb-2">No Local Orders Found</h3>
+            <p className="text-xs text-gray-400 mb-6">You haven't placed any orders from this device yet, or they haven't synced.</p>
+            <Link to="/categories">
+              <Button 
+                className="rounded-xl h-11 px-8 font-black uppercase tracking-widest text-[10px]"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Start Shopping
+              </Button>
+            </Link>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            <AnimatePresence>
+              {customerOrders.map(order => {
+                const isExpanded = !!expandedOrders[order.id];
+                const payment = parsePaymentMethod(order.paymentMethod);
+                
+                return (
+                  <motion.div
+                    key={order.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 shadow-sm"
+                  >
+                    {/* Card Header Summary */}
+                    <div 
+                      onClick={() => toggleExpand(order.id)}
+                      className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
                     >
-                      {/* Card Header Summary */}
-                      <div 
-                        onClick={() => toggleExpand(order.id)}
-                        className="p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
-                      >
-                        <div className="space-y-1">
-                          <p className="font-mono text-[10px] font-black uppercase text-gray-400 tracking-wider">{order.id}</p>
-                          <p className="text-xs font-bold text-gray-500 uppercase">
-                            Placed on {new Date(order.createdAt).toLocaleDateString()}
-                          </p>
+                      <div className="space-y-1">
+                        <p className="font-mono text-[10px] font-black uppercase text-gray-400 tracking-wider">{order.id}</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">
+                          Placed on {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase block">Total Amount</span>
+                          <span className="font-black text-base md:text-lg" style={{ color: settings.primaryColor }}>
+                            {settings.currencySymbol}{order.total.toFixed(2)}
+                          </span>
                         </div>
                         
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <span className="text-[9px] font-bold text-gray-400 uppercase block">Total Amount</span>
-                            <span className="font-black text-base md:text-lg" style={{ color: settings.primaryColor }}>
-                              {settings.currencySymbol}{order.total.toFixed(2)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
-                          </div>
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Stepper Tracking Visualizer (Always visible for convenience!) */}
-                      <div className="px-6 pb-6 border-b border-gray-100">
-                        {getStatusStepper(order.status)}
-                      </div>
+                    {/* Stepper Tracking Visualizer (Always visible for convenience!) */}
+                    <div className="px-6 pb-6 border-b border-gray-100">
+                      {getStatusStepper(order.status)}
+                    </div>
 
-                      {/* Expandable Order Details Block */}
-                      {isExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="p-6 bg-gray-50/50 space-y-6">
-                            {/* Order Items */}
-                            <div className="space-y-3">
-                              <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Order Items</h4>
-                              <div className="space-y-2 bg-white rounded-2xl p-4 border border-gray-100">
-                                {order.items.map(item => {
-                                  const matchedProd = products.find(p => p.id === item.productId);
-                                  return (
-                                    <div key={item.productId} className="flex justify-between items-center gap-4 py-2 border-b border-gray-50 last:border-b-0">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                                          {matchedProd && matchedProd.images?.[0] && (
-                                            <img src={matchedProd.images[0]} className="w-full h-full object-cover" alt="" />
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-[11px] font-bold uppercase leading-tight line-clamp-1">{item.name}</p>
-                                          <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-0.5">{item.quantity} x {settings.currencySymbol}{item.price}</p>
-                                        </div>
+                    {/* Expandable Order Details Block */}
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-6 bg-gray-50/50 space-y-6">
+                          {/* Order Items */}
+                          <div className="space-y-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Order Items</h4>
+                            <div className="space-y-2 bg-white rounded-2xl p-4 border border-gray-100">
+                              {order.items.map(item => {
+                                const matchedProd = products.find(p => p.id === item.productId);
+                                return (
+                                  <div key={item.productId} className="flex justify-between items-center gap-4 py-2 border-b border-gray-50 last:border-b-0">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                                        {matchedProd && matchedProd.images?.[0] && (
+                                          <img src={matchedProd.images[0]} className="w-full h-full object-cover" alt="" />
+                                        )}
                                       </div>
-                                      <p className="text-xs font-black">{settings.currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
+                                      <div>
+                                        <p className="text-[11px] font-bold uppercase leading-tight line-clamp-1">{item.name}</p>
+                                        <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-0.5">{item.quantity} x {settings.currencySymbol}{item.price}</p>
+                                      </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Shipping & Payment Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Delivery Address</span>
-                                <p className="text-xs text-gray-600 font-medium leading-relaxed bg-white p-3 rounded-xl border border-gray-100 italic">
-                                  {order.customerAddress}
-                                </p>
-                              </div>
-                              <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Payment & Contact</span>
-                                <div className="bg-white p-3 rounded-xl border border-gray-100 space-y-1 text-xs font-medium">
-                                  <p className="text-gray-700">Mode: <span className="font-bold">{payment.method}</span></p>
-                                  {order.customerPhone && <p className="text-gray-500">Phone: {order.customerPhone}</p>}
-                                  {order.customerEmail && <p className="text-gray-500">Email: {order.customerEmail}</p>}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Delivery Note if present */}
-                            {order.notes && (
-                              <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Your Delivery Note</span>
-                                <p className="text-xs text-amber-700 leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100/70 font-medium italic">
-                                  {order.notes}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200/50">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="rounded-xl h-9 text-[9px] font-black uppercase tracking-widest border-2 flex items-center gap-1.5"
-                                onClick={() => handleReorder(order)}
-                              >
-                                <RefreshCw className="h-3 w-3" />
-                                <span>Reorder Items</span>
-                              </Button>
-
-                              <a
-                                href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(`Hi, I would like to inquire about my order ID: ${order.id}. Current status is: ${order.status}.`)}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex h-9 items-center justify-center rounded-xl border-2 hover:bg-gray-100 transition-colors px-3 text-[9px] font-black uppercase tracking-widest gap-1.5"
-                              >
-                                <MessageSquare className="h-3 w-3 text-green-600" />
-                                <span>Inquire on WhatsApp</span>
-                              </a>
-
-                              <Link to={`/track-order?id=${order.id}`} className="inline-flex h-9 items-center justify-center rounded-xl border-2 hover:bg-gray-100 transition-colors px-3 text-[9px] font-black uppercase tracking-widest gap-1.5 ml-auto">
-                                <span>Go to Live Tracking</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </Link>
+                                    <p className="text-xs font-black">{settings.currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
 
-        {/* Lookup Sync Card Section */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-black uppercase tracking-wider pl-1">Find My Orders</h2>
-          <Card className="border-none shadow-sm bg-gray-50 rounded-[2rem] overflow-hidden p-6 md:p-8">
-            <CardHeader className="p-0 mb-6">
-              <CardTitle className="text-lg font-black uppercase">Retrieve Orders</CardTitle>
-              <CardDescription className="text-xs text-gray-400 mt-1">
-                Placed orders from another device? Enter your email address or phone number to retrieve and sync them here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <form onSubmit={handleLookup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="searchQuery">Email or Phone Number</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input 
-                      id="searchQuery"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="e.g. john@example.com or 03001234567"
-                      className="pl-10 h-12 rounded-2xl bg-white border-none shadow-inner"
-                      required
-                    />
-                  </div>
-                </div>
+                          {/* Shipping & Payment Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Delivery Address</span>
+                              <p className="text-xs text-gray-600 font-medium leading-relaxed bg-white p-3 rounded-xl border border-gray-100 italic">
+                                {order.customerAddress}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Payment & Contact</span>
+                              <div className="bg-white p-3 rounded-xl border border-gray-100 space-y-1 text-xs font-medium">
+                                <p className="text-gray-700">Mode: <span className="font-bold">{payment.method}</span></p>
+                                {order.customerPhone && <p className="text-gray-500">Phone: {order.customerPhone}</p>}
+                                {order.customerEmail && <p className="text-gray-500">Email: {order.customerEmail}</p>}
+                              </div>
+                            </div>
+                          </div>
 
-                <Button 
-                  type="submit"
-                  disabled={isSearching}
-                  className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: settings.primaryColor,
-                    color: 'var(--primary-foreground)',
-                    borderColor: 'var(--primary-border)',
-                  }}
-                >
-                  {isSearching ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <span>Sync Order History</span>
-                  )}
-                </Button>
-              </form>
+                          {/* Delivery Note if present */}
+                          {order.notes && (
+                            <div className="space-y-1">
+                              <span className="text-[8px] font-black uppercase tracking-wider text-gray-400">Your Delivery Note</span>
+                              <p className="text-xs text-amber-700 leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100/70 font-medium italic">
+                                {order.notes}
+                              </p>
+                            </div>
+                          )}
 
-              {/* Status Notifications */}
-              <AnimatePresence>
-                {searchSuccessMsg && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="mt-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-700 font-medium"
-                  >
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
-                    <span>{searchSuccessMsg}</span>
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200/50">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="rounded-xl h-9 text-[9px] font-black uppercase tracking-widest border-2 flex items-center gap-1.5"
+                              onClick={() => handleReorder(order)}
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              <span>Reorder Items</span>
+                            </Button>
+
+                            <a
+                              href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(`Hi, I would like to inquire about my order ID: ${order.id}. Current status is: ${order.status}.`)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-9 items-center justify-center rounded-xl border-2 hover:bg-gray-100 transition-colors px-3 text-[9px] font-black uppercase tracking-widest gap-1.5"
+                            >
+                              <MessageSquare className="h-3 w-3 text-green-600" />
+                              <span>Inquire on WhatsApp</span>
+                            </a>
+
+                            <Link to={`/track-order?id=${order.id}`} className="inline-flex h-9 items-center justify-center rounded-xl border-2 hover:bg-gray-100 transition-colors px-3 text-[9px] font-black uppercase tracking-widest gap-1.5 ml-auto">
+                              <span>Go to Live Tracking</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
-                )}
-
-                {searchErrorMsg && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 font-medium"
-                  >
-                    <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
-                    <span>{searchErrorMsg}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-        </div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   );
