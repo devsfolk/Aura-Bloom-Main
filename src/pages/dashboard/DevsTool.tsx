@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Lock, Key, ShieldCheck, Database, GitBranch, Plus, Trash2, Play, CheckCircle2, AlertTriangle, Cpu, Globe } from 'lucide-react';
+import { Terminal, Lock, Key, ShieldCheck, Database, GitBranch, Plus, Trash2, Play, CheckCircle2, AlertTriangle, Cpu, Globe, Pencil, Save, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,43 @@ export const DevsTool: React.FC = () => {
     supabaseAnonKey: '',
     vercelUrl: ''
   });
+
+  // Edit State
+  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    domain: '',
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+    vercelUrl: ''
+  });
+
+  const startEditing = (store: DeveloperStore) => {
+    setEditingStoreId(store.id);
+    setEditForm({
+      name: store.name,
+      domain: store.domain,
+      supabaseUrl: store.supabaseUrl,
+      supabaseAnonKey: store.supabaseAnonKey,
+      vercelUrl: store.vercelUrl
+    });
+  };
+
+  const handleSaveEdit = (id: string) => {
+    const updated = stores.map(store => {
+      if (store.id === id) {
+        return {
+          ...store,
+          ...editForm
+        };
+      }
+      return store;
+    });
+    setStores(updated);
+    localStorage.setItem('devsfolk_devstool_registry', JSON.stringify(updated));
+    setEditingStoreId(null);
+    addLog(`[registry] store successfully updated: "${editForm.name}"`);
+  };
 
   // Terminal Console State
   const [consoleLogs, setConsoleLogs] = useState<string[]>(['[system] devsfolk-orchestrator initialized. ready for database migrations.']);
@@ -245,44 +282,125 @@ export const DevsTool: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {stores.map((store) => (
-              <Card key={store.id} className="border border-slate-800 bg-slate-900/40 backdrop-blur rounded-[2rem] overflow-hidden">
+              <Card key={store.id} className="border border-slate-800 bg-slate-900/40 backdrop-blur rounded-[2rem] overflow-hidden transition-all duration-300">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-black text-sm uppercase tracking-tight text-white">{store.name}</h3>
-                      <a href={`https://${store.domain}`} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1.5 mt-1">
-                        <Globe className="h-3 w-3" />
-                        {store.domain}
-                      </a>
+                  {editingStoreId === store.id ? (
+                    /* Inline Editing Mode Card */
+                    <div className="space-y-3 font-mono">
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Store Name</label>
+                        <Input
+                          required
+                          value={editForm.name}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Custom Domain</label>
+                        <Input
+                          required
+                          value={editForm.domain}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, domain: e.target.value }))}
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Supabase URL</label>
+                        <Input
+                          required
+                          value={editForm.supabaseUrl}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, supabaseUrl: e.target.value }))}
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Supabase Anon Key</label>
+                        <Input
+                          required
+                          value={editForm.supabaseAnonKey}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, supabaseAnonKey: e.target.value }))}
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Vercel Panel URL</label>
+                        <Input
+                          required
+                          value={editForm.vercelUrl}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, vercelUrl: e.target.value }))}
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          onClick={() => handleSaveEdit(store.id)}
+                          className="flex-1 h-9 rounded-lg font-black uppercase tracking-widest text-[9px] bg-green-600 hover:bg-green-500 text-white flex items-center justify-center gap-1.5"
+                        >
+                          <Save className="h-3 w-3" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setEditingStoreId(null)}
+                          className="flex-1 h-9 rounded-lg font-black uppercase tracking-widest text-[9px] border border-slate-800 hover:bg-slate-800 text-slate-400"
+                        >
+                          <XCircle className="h-3 w-3" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-gray-500 hover:text-red-500 h-8 w-8 hover:bg-red-500/10 rounded-xl"
-                      onClick={() => handleDeleteStore(store.id, store.name)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ) : (
+                    /* Display Mode Card */
+                    <>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-black text-sm uppercase tracking-tight text-white">{store.name}</h3>
+                          <a href={`https://${store.domain}`} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1.5 mt-1">
+                            <Globe className="h-3 w-3" />
+                            {store.domain}
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-gray-500 hover:text-indigo-400 h-8 w-8 hover:bg-indigo-500/10 rounded-xl"
+                            onClick={() => startEditing(store)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-gray-500 hover:text-red-500 h-8 w-8 hover:bg-red-500/10 rounded-xl"
+                            onClick={() => handleDeleteStore(store.id, store.name)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
 
-                  <div className="space-y-2 text-[10px] border-t border-slate-800 pt-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 uppercase tracking-wider">Database:</span>
-                      <span className="text-gray-300 truncate max-w-[200px] font-mono">{store.supabaseUrl}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 uppercase tracking-wider">Hosting:</span>
-                      <a href={store.vercelUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline truncate max-w-[200px] font-mono">
-                        Vercel Project Panel
-                      </a>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-500 uppercase tracking-wider">Status:</span>
-                      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-bold uppercase tracking-wider">
-                        Active Sync
-                      </span>
-                    </div>
-                  </div>
+                      <div className="space-y-2 text-[10px] border-t border-slate-800 pt-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 uppercase tracking-wider">Database:</span>
+                          <span className="text-gray-300 truncate max-w-[200px] font-mono">{store.supabaseUrl}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 uppercase tracking-wider">Hosting:</span>
+                          <a href={store.vercelUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline truncate max-w-[200px] font-mono">
+                            Vercel Project Panel
+                          </a>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500 uppercase tracking-wider">Status:</span>
+                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-bold uppercase tracking-wider">
+                            Active Sync
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             ))}
