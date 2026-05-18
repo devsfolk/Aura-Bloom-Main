@@ -148,7 +148,7 @@
 
 ### [COMPLETED] Task 9: DevsFolk Enterprise Project Rebranding & Storefront Promotion Footer Link
 - **Date**: 2026-05-18
-- **Branch**: `feat/project-branding-devsfolk`
+- **Branch**: `feat/project-branding-devsfolk` (Merged)
 - **Description**: Rebranded the "OmniStore" multi-business project framework to "DevsFolk". Removed the obsolete "OmniStore" prefix and key identifiers throughout code configurations and cache files, replacing them with the secure "devsfolk" namespace. Implemented clean backward compatibility fallback for user local cache migration. Added a premium, modern "Powered by DevsFolk" promotional link in the storefront footer to build customer trust and promote company branding.
 - **Files Modified**: 
   - `metadata.json`: Updated system descriptor name attribute to "DevsFolk".
