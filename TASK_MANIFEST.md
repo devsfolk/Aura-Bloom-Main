@@ -99,5 +99,38 @@
 
 ---
 
+### [COMPLETED] Task 6: Dynamic Phone Validation Rules & Layout Stabilizer
+- **Date**: 2026-05-18
+- **Branch**: `main` (Merged)
+- **Description**: Added dynamic regional validation settings for USA, UK, Pakistan, and custom-format phone numbers. Fixed the desktop layout overflow on the admin order details popover.
+- **Files Modified**: 
+  - `src/types.ts`: Added `phoneFormat` and `customPhonePlaceholder` variables.
+  - `src/context/ShopContext.tsx`: Initialized phone properties.
+  - `src/pages/dashboard/GeneralSettings.tsx`: Designed premium selector blocks with regional flags and help text.
+  - `src/pages/storefront/CheckoutPage.tsx`: Integrated dynamic validation rules inside checkout submit and placeholders.
+  - `src/pages/dashboard/OrdersPage.tsx`: Stabilized dialog footer and content viewport scrolling.
+- **Vercel Sandbox URLs**:
+  - Storefront: [https://aurabloom-git-main-devsfolks-projects.vercel.app](https://aurabloom-git-main-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-main-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-main-devsfolks-projects.vercel.app/dashboard)
+- **Verification**: Verified dynamic validation logic, exact character/digit length checking, custom regex-less matching, and dialog height constraint scrolling.
+
+---
+
+### [COMPLETED] Task 7: Customer Order History & Security Sync System
+- **Date**: 2026-05-18
+- **Branch**: `feat-customer-order-history` (Merged)
+- **Description**: Replaced the wishlist feature with an enterprise-grade Order History module. Allows customers to instantly review, track, and repeat orders placed on their device, or sync orders placed on other devices using email/phone lookup.
+- **Files Modified**: 
+  - `src/App.tsx`: Registered `/order-history` route and added transparent redirect fallback for `/wishlist`.
+  - `src/components/layout/StoreLayout.tsx`: Updated navigation bar icons, tooltips, and footer links to point to order history.
+  - `src/context/ShopContext.tsx`: Automated local order caching upon successful placement.
+  - `src/pages/storefront/OrderHistoryPage.tsx`: Designed the elegant history screen with responsive dual-layouts, minimalistic title blocks, secure search sync forms, status steppers, collapsible order details, reordering features, and WhatsApp inquiry buttons.
+- **Vercel Sandbox URLs**:
+  - Storefront: [https://aurabloom-git-feat-customer-order-history-devsfolks-projects.vercel.app](https://aurabloom-git-feat-customer-order-history-devsfolks-projects.vercel.app)
+  - Dashboard: [https://aurabloom-git-feat-customer-order-history-devsfolks-projects.vercel.app/dashboard](https://aurabloom-git-feat-customer-order-history-devsfolks-projects.vercel.app/dashboard)
+- **Verification**: Verified order persistence to localStorage, collapsible item lists, status steps rendering, secure sync matching logic, reorder utility, and fully responsive layouts.
+
+---
+
 ## Current Active Task
 *No active task. Waiting for user instruction.*
