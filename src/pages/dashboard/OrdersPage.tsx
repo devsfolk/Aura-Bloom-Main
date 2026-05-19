@@ -427,7 +427,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-[9px] font-bold text-gray-400 uppercase">Shipping</span>
-                      <span className={settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title.toLowerCase().includes('free') ? "text-[9px] font-bold text-green-600 uppercase" : "text-[9px] font-bold text-black uppercase"}>
+                      <span className={settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title?.toLowerCase()?.includes('free') ? "text-[9px] font-bold text-green-600 uppercase" : "text-[9px] font-bold text-black uppercase"}>
                         {settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title || 'FREE'}
                       </span>
                     </div>
