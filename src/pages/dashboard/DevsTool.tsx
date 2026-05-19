@@ -11,6 +11,7 @@ interface DeveloperStore {
   supabaseUrl: string;
   supabaseAnonKey: string;
   vercelUrl: string;
+  gitRepo: string;
   status: 'connected' | 'error';
 }
 
@@ -22,6 +23,7 @@ const DEFAULT_STORES: DeveloperStore[] = [
     supabaseUrl: 'https://aurabloom-supabase.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     vercelUrl: 'https://vercel.com/devsfolk/aurabloom',
+    gitRepo: 'devsfolk/DevsFolkStore',
     status: 'connected'
   },
   {
@@ -31,6 +33,7 @@ const DEFAULT_STORES: DeveloperStore[] = [
     supabaseUrl: 'https://junfragrance-supabase.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     vercelUrl: 'https://vercel.com/devsfolk/junfragrance',
+    gitRepo: 'devsfolk/DevsFolkStore',
     status: 'connected'
   }
 ];
@@ -63,7 +66,8 @@ export const DevsTool: React.FC = () => {
     domain: '',
     supabaseUrl: '',
     supabaseAnonKey: '',
-    vercelUrl: ''
+    vercelUrl: '',
+    gitRepo: 'devsfolk/DevsFolkStore'
   });
 
   // Edit State
@@ -73,7 +77,8 @@ export const DevsTool: React.FC = () => {
     domain: '',
     supabaseUrl: '',
     supabaseAnonKey: '',
-    vercelUrl: ''
+    vercelUrl: '',
+    gitRepo: ''
   });
 
   const startEditing = (store: DeveloperStore) => {
@@ -83,7 +88,8 @@ export const DevsTool: React.FC = () => {
       domain: store.domain,
       supabaseUrl: store.supabaseUrl,
       supabaseAnonKey: store.supabaseAnonKey,
-      vercelUrl: store.vercelUrl
+      vercelUrl: store.vercelUrl,
+      gitRepo: store.gitRepo || 'devsfolk/DevsFolkStore'
     });
   };
 
@@ -152,7 +158,8 @@ export const DevsTool: React.FC = () => {
       domain: '',
       supabaseUrl: '',
       supabaseAnonKey: '',
-      vercelUrl: ''
+      vercelUrl: '',
+      gitRepo: 'devsfolk/DevsFolkStore'
     });
   };
 
@@ -332,6 +339,16 @@ export const DevsTool: React.FC = () => {
                           className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
                         />
                       </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Git Project Repo</label>
+                        <Input
+                          required
+                          value={editForm.gitRepo}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, gitRepo: e.target.value }))}
+                          placeholder="e.g. devsfolk/DevsFolkStore"
+                          className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
+                        />
+                      </div>
                       <div className="flex gap-2 pt-2">
                         <Button
                           onClick={() => handleSaveEdit(store.id)}
@@ -391,6 +408,13 @@ export const DevsTool: React.FC = () => {
                           <a href={store.vercelUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline truncate max-w-[200px] font-mono">
                             Vercel Project Panel
                           </a>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 uppercase tracking-wider">Git Codebase:</span>
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-400 font-mono">
+                            <GitBranch className="h-3 w-3" />
+                            {store.gitRepo || 'devsfolk/DevsFolkStore'}
+                          </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500 uppercase tracking-wider">Status:</span>
@@ -512,6 +536,17 @@ export const DevsTool: React.FC = () => {
                     value={newStore.vercelUrl}
                     onChange={(e) => setNewStore(prev => ({ ...prev, vercelUrl: e.target.value }))}
                     placeholder="https://vercel.com/devsfolk/..."
+                    className="h-11 rounded-xl border-slate-800 bg-slate-950 text-xs text-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block">Git Project Repo</label>
+                  <Input
+                    required
+                    value={newStore.gitRepo}
+                    onChange={(e) => setNewStore(prev => ({ ...prev, gitRepo: e.target.value }))}
+                    placeholder="e.g. devsfolk/DevsFolkStore"
                     className="h-11 rounded-xl border-slate-800 bg-slate-950 text-xs text-white font-mono"
                   />
                 </div>
