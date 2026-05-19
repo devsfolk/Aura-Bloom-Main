@@ -37,6 +37,8 @@ interface ShopContextType {
   placeOrder: (customerData: Omit<Order, 'id' | 'items' | 'total' | 'status' | 'createdAt'>, mode: 'WHATSAPP' | 'WEBSITE', paymentMethod?: string) => void;
   cartTotal: number;
   loading: boolean;
+  dataLoading: boolean;
+  authLoading: boolean;
   reviews: Review[];
   addReview: (review: Omit<Review, 'id' | 'createdAt'>) => void;
   wishlist: string[];
@@ -1301,6 +1303,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       placeOrder,
       cartTotal,
       loading,
+      dataLoading,
+      authLoading,
       reviews,
       addReview,
       wishlist,
@@ -1309,7 +1313,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
     }),
-    [settings, products, categories, orders, cart, cartTotal, loading, reviews, wishlist, isAdmin],
+    [settings, products, categories, orders, cart, cartTotal, loading, dataLoading, authLoading, reviews, wishlist, isAdmin],
   );
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
