@@ -8,9 +8,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ShoppingBag, Zap, ShieldCheck, Truck, Mail, ChevronLeft, ChevronRight, MessageCircle, RotateCcw, CreditCard, Gift, BadgeCheck } from 'lucide-react';
 
 export const Home: React.FC = () => {
-  const { settings, products, categories, addToCart } = useShop();
+  const { settings, products, categories, addToCart, dataLoading } = useShop();
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+  const isFirstLoadNoCache = React.useMemo(() => {
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL || '';
+      const key = `devsfolk_settings_${url.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      return dataLoading && !localStorage.getItem(key);
+    } catch {
+      return dataLoading;
+    }
+  }, [dataLoading]);
+
   const homepageProducts = React.useMemo(() => {
     const orderedProducts = [...products].sort((a, b) => (a.order || 0) - (b.order || 0));
     const featuredProducts = orderedProducts.filter((product) => product.isFeatured);
@@ -499,6 +510,20 @@ export const Home: React.FC = () => {
         return null;
     }
   };
+
+  if (isFirstLoadNoCache) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center py-20 bg-slate-950">
+        <div className="relative w-10 h-10 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-slate-900" />
+          <div className="absolute inset-0 rounded-full border-t border-indigo-500 animate-spin" />
+        </div>
+        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mt-4 animate-pulse">
+          Loading catalog...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">

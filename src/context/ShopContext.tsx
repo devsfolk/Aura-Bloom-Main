@@ -420,10 +420,39 @@ const toOrderRow = (order: Order, paymentMethod?: string) => ({
 
 const createId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+const getCacheKey = (prefix: string) => {
+  const url = import.meta.env.VITE_SUPABASE_URL || '';
+  return `devsfolk_${prefix}_${url.replace(/[^a-zA-Z0-9]/g, '_')}`;
+};
+
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<ThemeSettings>(DEFAULT_SETTINGS);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [settings, setSettings] = useState<ThemeSettings>(() => {
+    try {
+      const stored = localStorage.getItem(getCacheKey('settings'));
+      return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const stored = localStorage.getItem(getCacheKey('products'));
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const stored = localStorage.getItem(getCacheKey('categories'));
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -470,6 +499,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           primaryColor: remoteSettings.primaryColor,
         };
         localStorage.setItem(key, JSON.stringify(shopMeta));
+        localStorage.setItem(getCacheKey('settings'), JSON.stringify(remoteSettings));
       } catch (e) {
         console.error('Failed to cache storefront metadata:', e);
       }
@@ -482,6 +512,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteCategories = (categoriesResult.data ?? []).map(mapCategoryRow);
       setCategories(remoteCategories);
+      try {
+        localStorage.setItem(getCacheKey('categories'), JSON.stringify(remoteCategories));
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     if (productsResult.error) {
@@ -489,6 +524,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteProducts = (productsResult.data ?? []).map(mapProductRow);
       setProducts(remoteProducts);
+      try {
+        localStorage.setItem(getCacheKey('products'), JSON.stringify(remoteProducts));
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     if (reviewsResult.error) {
