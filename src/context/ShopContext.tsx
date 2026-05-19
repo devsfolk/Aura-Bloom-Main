@@ -457,7 +457,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const rawSettings = (settingsResult.data?.value ?? {}) as Partial<ThemeSettings>;
       const remoteSettings = mergeSettings(rawSettings);
       setSettings(remoteSettings);
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(remoteSettings));
       applyCssVariables(remoteSettings);
     }
 
@@ -466,7 +465,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteCategories = (categoriesResult.data ?? []).map(mapCategoryRow);
       setCategories(remoteCategories);
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(remoteCategories));
     }
 
     if (productsResult.error) {
@@ -474,7 +472,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteProducts = (productsResult.data ?? []).map(mapProductRow);
       setProducts(remoteProducts);
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(remoteProducts));
     }
 
     if (reviewsResult.error) {
@@ -482,7 +479,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteReviews = (reviewsResult.data ?? []).map(mapReviewRow);
       setReviews(remoteReviews);
-      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(remoteReviews));
     }
   };
 
@@ -643,30 +639,37 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const localSettings = mergeSettings(hasLocalSettings ? readLocalJson<Partial<ThemeSettings> | null>(SETTINGS_STORAGE_KEY, null) : null);
       const localProducts = hasLocalProducts
         ? readLocalJson<Product[]>(PRODUCTS_STORAGE_KEY, [])
-        : hasSupabaseConfig
-          ? []
-          : SAMPLE_PRODUCTS;
+        : SAMPLE_PRODUCTS;
       const localCategories = hasLocalCategories
         ? readLocalJson<Category[]>(CATEGORIES_STORAGE_KEY, [])
-        : hasSupabaseConfig
-          ? []
-          : SAMPLE_CATEGORIES;
+        : SAMPLE_CATEGORIES;
       const localOrders = readLocalJson<Order[]>(ORDERS_STORAGE_KEY, []);
       const localReviews = hasLocalReviews ? readLocalJson<Review[]>(REVIEWS_STORAGE_KEY, []) : [];
       const localCart = readLocalJson<CartItem[]>(CART_STORAGE_KEY, []);
       const localWishlist = readLocalJson<string[]>(WISHLIST_STORAGE_KEY, []);
 
-      setSettings(localSettings);
-      setProducts(localProducts);
-      setCategories(localCategories);
-      setOrders(localOrders);
-      setReviews(localReviews);
+      if (hasSupabaseConfig) {
+        // Production mode: Bypasses stale local caches. Load fresh from Supabase.
+        setSettings(mergeSettings(null));
+        setProducts([]);
+        setCategories([]);
+        setReviews([]);
+        setOrders([]);
+      } else {
+        // Offline / Local development fallback mode
+        setSettings(localSettings);
+        setProducts(localProducts);
+        setCategories(localCategories);
+        setReviews(localReviews);
+        setOrders(localOrders);
+      }
+
       setCart(localCart);
       setWishlist(localWishlist);
-      applyCssVariables(localSettings);
-      setDataLoading(false);
+      applyCssVariables(hasSupabaseConfig ? mergeSettings(null) : localSettings);
 
       if (!supabase) {
+        setDataLoading(false);
         setAuthLoading(false);
         return;
       }
@@ -676,6 +679,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await flushPendingOrdersToSupabase();
       } catch (error) {
         reportSyncError('Failed to hydrate storefront data from Supabase.', error);
+      } finally {
+        setDataLoading(false);
       }
     };
 
@@ -814,6 +819,48 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'store_settings' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reviews' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!supabase || !isAdmin) {
       return;
     }
@@ -836,7 +883,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateSettings = (newSettings: Partial<ThemeSettings>) => {
     const updated = mergeSettings({ ...settings, ...newSettings });
     setSettings(updated);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    }
     applyCssVariables(updated);
 
     if (supabase) {
@@ -876,7 +925,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProduct: Product = { ...product, id: createId('p'), createdAt: Date.now() };
     const updated = [newProduct, ...products];
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -894,7 +945,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = products.map((product) => (product.id === id ? { ...product, ...updates } : product));
     const product = updated.find((item) => item.id === id);
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase && product) {
       void (async () => {
@@ -911,7 +964,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteProduct = (id: string) => {
     const updated = products.filter((product) => product.id !== id);
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -929,7 +984,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newCategory: Category = { ...category, id: createId('c'), createdAt: Date.now() };
     const updated = [newCategory, ...categories];
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -947,7 +1004,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = categories.map((category) => (category.id === id ? { ...category, ...updates } : category));
     const category = updated.find((item) => item.id === id);
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase && category) {
       void (async () => {
@@ -964,7 +1023,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteCategory = (id: string) => {
     const updated = categories.filter((category) => category.id !== id);
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
