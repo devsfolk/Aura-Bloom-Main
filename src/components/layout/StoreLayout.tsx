@@ -24,31 +24,89 @@ export const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Instantly extract cached store name and logo for fast brand loading
+  const cachedMeta = React.useMemo(() => {
+    try {
+      const stored = localStorage.getItem('devsfolk_shop_meta');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const loadingShopName = cachedMeta?.shopName || 'Aura Bloom';
+  const loadingLogoUrl = cachedMeta?.logoUrl || null;
+  const loadingPrimaryColor = cachedMeta?.primaryColor || '#6366f1';
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
         {/* Soft elegant ambient background glows */}
-        <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse duration-[4000ms]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse duration-[6000ms]" />
+        <div 
+          className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full blur-[100px] animate-pulse duration-[4000ms]" 
+          style={{ backgroundColor: `${loadingPrimaryColor}10` }}
+        />
+        <div 
+          className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full blur-[100px] animate-pulse duration-[6000ms]" 
+          style={{ backgroundColor: `${loadingPrimaryColor}08` }}
+        />
 
         <div className="relative z-10 flex flex-col items-center gap-6">
+          {/* Logo or Brand Initials */}
+          <div className="flex flex-col items-center gap-4">
+            {loadingLogoUrl ? (
+              <img 
+                src={loadingLogoUrl} 
+                alt={loadingShopName} 
+                className="h-16 w-auto object-contain animate-pulse" 
+              />
+            ) : (
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl border text-white animate-pulse"
+                style={{ 
+                  backgroundColor: loadingPrimaryColor,
+                  borderColor: `${loadingPrimaryColor}40`
+                }}
+              >
+                {loadingShopName.charAt(0)}
+              </div>
+            )}
+            
+            <h1 className="text-white text-base font-black tracking-tight uppercase animate-pulse">
+              {loadingShopName}
+            </h1>
+          </div>
+
           {/* High-End Minimalist Logo Skeleton Ring */}
-          <div className="relative w-16 h-16 flex items-center justify-center animate-pulse">
-            <div className="absolute inset-0 rounded-full border border-indigo-500/20" />
-            <div className="absolute inset-0 rounded-full border-t border-indigo-500 animate-spin" />
-            <div className="w-10 h-10 bg-gradient-to-tr from-slate-900 to-slate-800 rounded-xl flex items-center justify-center shadow-2xl border border-slate-800">
-              <span className="text-[10px] font-black text-indigo-400 tracking-tighter uppercase leading-none">DF</span>
-            </div>
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div 
+              className="absolute inset-0 rounded-full border" 
+              style={{ borderColor: `${loadingPrimaryColor}20` }}
+            />
+            <div 
+              className="absolute inset-0 rounded-full border-t animate-spin" 
+              style={{ borderTopColor: loadingPrimaryColor }}
+            />
           </div>
 
           <div className="flex flex-col items-center gap-1.5">
-            <span className="text-[10px] font-black tracking-[0.3em] uppercase text-slate-400 animate-pulse">
-              Authenticating Storefront
+            <span className="text-[9px] font-black tracking-[0.3em] uppercase text-slate-400 animate-pulse">
+              Loading Boutique Catalog
             </span>
-            <span className="text-[9px] font-medium tracking-widest text-slate-500 uppercase">
-              Preparing premium retail console
+            <span className="text-[8px] font-medium tracking-widest text-slate-600 uppercase">
+              Connecting to secure database
             </span>
           </div>
+        </div>
+
+        {/* Powered by DevsFolk Logo in bottom-right corner */}
+        <div className="absolute bottom-6 right-6 z-20 flex items-center gap-1.5 opacity-40 hover:opacity-80 transition-opacity duration-300">
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">
+            Powered by
+          </span>
+          <span className="text-[9px] font-black uppercase tracking-wider text-indigo-400">
+            DevsFolk
+          </span>
         </div>
       </div>
     );
@@ -59,9 +117,20 @@ export const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children 
     return products.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
   }, [searchQuery, products]);
 
-  const deviceConfig = settings[device];
+  const deviceConfig = settings[device] || {
+    headerStyle: 'standard',
+    headerTheme: 'glass',
+    isHeaderSticky: true,
+    heroStyle: 'banner',
+    productGridCols: 3,
+    productCardStyle: 'grid',
+    showCategories: true,
+    showFeatured: true,
+    showNewsletter: true,
+    footerStyle: 'detailed',
+  };
   const isDevsFolk = settings.activeTemplate === 'devsfolk';
-  const activeSocialLinks = settings.socialLinks.filter((link) => link.enabled && link.url.trim());
+  const activeSocialLinks = (settings.socialLinks || []).filter((link) => link.enabled && link.url.trim());
 
   const getSocialIcon = (platform: string) => {
     switch (platform.trim().toLowerCase()) {

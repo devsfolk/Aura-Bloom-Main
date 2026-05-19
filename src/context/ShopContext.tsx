@@ -457,6 +457,19 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const rawSettings = (settingsResult.data?.value ?? {}) as Partial<ThemeSettings>;
       const remoteSettings = mergeSettings(rawSettings);
       setSettings(remoteSettings);
+      
+      // Cache basic brand metadata for immediate load rendering
+      try {
+        const shopMeta = {
+          shopName: remoteSettings.shopName,
+          logoUrl: remoteSettings.logoUrl,
+          primaryColor: remoteSettings.primaryColor,
+        };
+        localStorage.setItem('devsfolk_shop_meta', JSON.stringify(shopMeta));
+      } catch (e) {
+        console.error('Failed to cache storefront metadata:', e);
+      }
+
       applyCssVariables(remoteSettings);
     }
 
@@ -886,6 +899,19 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!supabase) {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
     }
+    
+    // Update basic brand metadata cache
+    try {
+      const shopMeta = {
+        shopName: updated.shopName,
+        logoUrl: updated.logoUrl,
+        primaryColor: updated.primaryColor,
+      };
+      localStorage.setItem('devsfolk_shop_meta', JSON.stringify(shopMeta));
+    } catch (e) {
+      console.error('Failed to cache storefront metadata:', e);
+    }
+
     applyCssVariables(updated);
 
     if (supabase) {
