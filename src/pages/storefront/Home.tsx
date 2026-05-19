@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ShoppingBag, Zap, ShieldCheck, Truck, Mail, ChevronLeft, ChevronRight, MessageCircle, RotateCcw, CreditCard, Gift, BadgeCheck } from 'lucide-react';
 
 export const Home: React.FC = () => {
-  const { settings, products, categories, addToCart } = useShop();
+  const { settings, products, categories, addToCart, loading } = useShop();
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const homepageProducts = React.useMemo(() => {
@@ -48,7 +48,9 @@ export const Home: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    document.title = `${settings.shopName} | ${settings.shopDescription}`;
+    if (settings.shopName) {
+      document.title = `${settings.shopName} | ${settings.shopDescription}`;
+    }
   }, [settings.shopName, settings.shopDescription]);
 
   const deviceConfig = settings[device];
@@ -488,6 +490,20 @@ export const Home: React.FC = () => {
         return null;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center py-20 bg-white">
+        <div className="relative w-10 h-10 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-slate-100" />
+          <div className="absolute inset-0 rounded-full border-t border-indigo-600 animate-spin" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mt-4 animate-pulse">
+          Loading catalog...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
