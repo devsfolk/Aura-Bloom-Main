@@ -68,7 +68,7 @@ const DEFAULT_SETTINGS: ThemeSettings = {
   backgroundColor: '#ffffff',
   fontSans: 'Inter',
   fontDisplay: 'Outfit',
-  shopName: 'Lumina Beauty',
+  shopName: 'Aura Bloom',
   shopDescription: 'Premium Artistry & Skincare for the Modern Aesthetic',
   currency: 'USD',
   currencySymbol: '$',

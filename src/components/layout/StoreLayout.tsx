@@ -24,92 +24,9 @@ export const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Instantly extract cached store name and logo specific to this database connection
-  const cachedMeta = React.useMemo(() => {
-    try {
-      const url = import.meta.env.VITE_SUPABASE_URL || '';
-      const key = `devsfolk_shop_meta_${url.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      const stored = localStorage.getItem(key);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  }, []);
 
-  const loadingShopName = cachedMeta?.shopName || 'Aura Bloom';
-  const loadingLogoUrl = cachedMeta?.logoUrl || null;
-  const loadingPrimaryColor = cachedMeta?.primaryColor || '#6366f1';
 
-  if (dataLoading) {
-    return (
-      <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Soft elegant ambient background glows */}
-        <div 
-          className="absolute top-1/4 left-1/4 w-[300px] h-[300px] rounded-full blur-[100px] animate-pulse duration-[4000ms]" 
-          style={{ backgroundColor: `${loadingPrimaryColor}10` }}
-        />
-        <div 
-          className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] rounded-full blur-[100px] animate-pulse duration-[6000ms]" 
-          style={{ backgroundColor: `${loadingPrimaryColor}08` }}
-        />
 
-        <div className="relative z-10 flex flex-col items-center gap-6">
-          {/* Logo or Brand Initials */}
-          <div className="flex flex-col items-center gap-4">
-            {loadingLogoUrl ? (
-              <img 
-                src={loadingLogoUrl} 
-                alt={loadingShopName} 
-                className="h-16 w-auto object-contain animate-pulse" 
-              />
-            ) : (
-              <div 
-                className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl border text-white animate-pulse"
-                style={{ 
-                  backgroundColor: loadingPrimaryColor,
-                  borderColor: `${loadingPrimaryColor}40`
-                }}
-              >
-                {loadingShopName.charAt(0)}
-              </div>
-            )}
-            
-            <h1 className="text-white text-base font-black tracking-tight uppercase animate-pulse">
-              {loadingShopName}
-            </h1>
-          </div>
-
-          {/* High-End Minimalist Logo Skeleton Ring */}
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            <div 
-              className="absolute inset-0 rounded-full border" 
-              style={{ borderColor: `${loadingPrimaryColor}20` }}
-            />
-            <div 
-              className="absolute inset-0 rounded-full border-t animate-spin" 
-              style={{ borderTopColor: loadingPrimaryColor }}
-            />
-          </div>
-
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black tracking-[0.25em] uppercase text-slate-400 animate-pulse">
-              Loading {loadingShopName}...
-            </span>
-          </div>
-        </div>
-
-        {/* Powered by DevsFolk Logo in bottom-right corner */}
-        <div className="absolute bottom-6 right-6 z-20 flex items-center gap-1.5 opacity-40 hover:opacity-80 transition-opacity duration-300">
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">
-            Powered by
-          </span>
-          <span className="text-[9px] font-black uppercase tracking-wider text-indigo-400">
-            DevsFolk
-          </span>
-        </div>
-      </div>
-    );
-  }
 
   const searchResults = React.useMemo(() => {
     if (!searchQuery.trim()) return [];
