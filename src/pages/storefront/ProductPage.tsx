@@ -7,16 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '@/lib/supabase';
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { products, settings, addToCart, categories, reviews, addReview, wishlist, toggleWishlist } = useShop();
+  const { products, settings, addToCart, categories, reviews, addReview, wishlist, toggleWishlist, orders } = useShop();
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [device, setDevice] = React.useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewName, setReviewName] = useState('');
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewEmail, setReviewEmail] = useState('');
+  const [reviewPhone, setReviewPhone] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
   const isDevsFolk = settings.activeTemplate === 'devsfolk';
   const featureIconMap = {
@@ -67,9 +72,75 @@ export const ProductPage: React.FC = () => {
     );
   }
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewName || !reviewComment) return;
+    setVerificationError('');
+
+    if (!reviewName || !reviewComment) {
+      setVerificationError('Please enter your name and write a review.');
+      return;
+    }
+
+    const cleanEmail = reviewEmail.trim().toLowerCase();
+    const cleanPhone = reviewPhone.trim().replace(/[^0-9]/g, '');
+
+    if (!cleanEmail && !cleanPhone) {
+      setVerificationError('Please enter either your Email Address or Phone Number to verify your purchase.');
+      return;
+    }
+
+    setIsVerifying(true);
+    let verified = false;
+
+    // 1. Search local cached orders list
+    if (orders && orders.length > 0) {
+      const match = orders.find(order => {
+        const orderEmail = (order.customerEmail || '').trim().toLowerCase();
+        const orderPhone = (order.customerPhone || '').trim().replace(/[^0-9]/g, '');
+        const hasMatchingContact = (cleanEmail && orderEmail === cleanEmail) || (cleanPhone && orderPhone === cleanPhone);
+        return hasMatchingContact && order.status === 'COMPLETED';
+      });
+      if (match) {
+        verified = true;
+      }
+    }
+
+    // 2. Query Supabase database directly for 100% real-time fallback
+    if (!verified && supabase) {
+      try {
+        if (cleanEmail) {
+          const { data: emailOrders } = await supabase
+            .from('orders')
+            .select('id, status, customer_email')
+            .eq('customer_email', cleanEmail)
+            .eq('status', 'COMPLETED');
+          
+          if (emailOrders && emailOrders.length > 0) {
+            verified = true;
+          }
+        }
+
+        if (!verified && cleanPhone) {
+          const { data: phoneOrders } = await supabase
+            .from('orders')
+            .select('id, status, customer_phone')
+            .eq('customer_phone', cleanPhone)
+            .eq('status', 'COMPLETED');
+          
+          if (phoneOrders && phoneOrders.length > 0) {
+            verified = true;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to query orders database:', err);
+      }
+    }
+
+    if (!verified) {
+      setVerificationError('Verification failed. No completed order was found associated with the provided Email Address or Phone Number.');
+      setIsVerifying(false);
+      return;
+    }
 
     addReview({
       productId: product.id,
@@ -80,7 +151,10 @@ export const ProductPage: React.FC = () => {
 
     setReviewName('');
     setReviewComment('');
+    setReviewEmail('');
+    setReviewPhone('');
     setReviewRating(5);
+    setIsVerifying(false);
   };
 
   const handleShare = async () => {
@@ -356,23 +430,54 @@ export const ProductPage: React.FC = () => {
                         onChange={(e) => setReviewName(e.target.value)}
                         className="bg-white rounded-xl border-gray-200" 
                      />
-                     <Textarea 
-                        placeholder="Your experience with this product..." 
-                        value={reviewComment}
-                        onChange={(e) => setReviewComment(e.target.value)}
-                        className="bg-white rounded-xl border-gray-200 min-h-[100px]" 
-                     />
-                     <Button
-                        type="submit"
-                        className="w-full rounded-xl font-bold uppercase tracking-widest text-xs h-11"
-                        style={{
-                           backgroundColor: settings.primaryColor,
-                           color: 'var(--primary-foreground)',
-                           borderColor: 'var(--primary-border)',
-                        }}
-                     >
-                        Submit Review
-                     </Button>
+                      
+                      <div className="border-t pt-3 mt-3 space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-gray-400 opacity-80 block">Verify Purchase</span>
+                        <p className="text-[10px] leading-tight text-gray-500 font-bold mb-2">
+                          Reviews are restricted to verified buyers. Provide either the Email or Phone used in your completed order:
+                        </p>
+                        <Input 
+                           type="email"
+                           placeholder="Order Email Address" 
+                           value={reviewEmail}
+                           onChange={(e) => setReviewEmail(e.target.value)}
+                           className="bg-white rounded-xl border-gray-200" 
+                        />
+                        <div className="text-center text-[9px] font-bold text-gray-400 uppercase my-1">- OR -</div>
+                        <Input 
+                           type="tel"
+                           placeholder="Order Phone Number" 
+                           value={reviewPhone}
+                           onChange={(e) => setReviewPhone(e.target.value)}
+                           className="bg-white rounded-xl border-gray-200" 
+                        />
+                      </div>
+
+                      <Textarea 
+                         placeholder="Your experience with this product..." 
+                         value={reviewComment}
+                         onChange={(e) => setReviewComment(e.target.value)}
+                         className="bg-white rounded-xl border-gray-200 min-h-[100px]" 
+                      />
+
+                      {verificationError && (
+                        <p className="text-[10px] font-bold text-red-600 border border-red-100 bg-red-50/50 rounded-xl p-3 leading-snug">
+                          {verificationError}
+                        </p>
+                      )}
+
+                      <Button
+                         type="submit"
+                         disabled={isVerifying}
+                         className="w-full rounded-xl font-bold uppercase tracking-widest text-xs h-11"
+                         style={{
+                            backgroundColor: settings.primaryColor,
+                            color: 'var(--primary-foreground)',
+                            borderColor: 'var(--primary-border)',
+                         }}
+                      >
+                         {isVerifying ? 'Verifying Purchase...' : 'Submit Review'}
+                      </Button>
                   </form>
                </div>
             </div>
@@ -383,7 +488,13 @@ export const ProductPage: React.FC = () => {
                      <div key={review.id} className="pb-8 border-b last:border-none">
                         <div className="flex justify-between items-start mb-2">
                            <div>
-                              <div className="font-black text-sm uppercase tracking-tight mb-1">{review.userName}</div>
+                              <div className="font-black text-sm uppercase tracking-tight mb-1 flex items-center gap-1.5 flex-wrap">
+                                {review.userName}
+                                <span className="inline-flex items-center gap-0.5 text-[8px] bg-emerald-50 text-emerald-700 border border-emerald-100 rounded px-1.5 py-0.5 font-black tracking-widest uppercase">
+                                  <BadgeCheck className="h-2.5 w-2.5 fill-emerald-100 text-emerald-700" />
+                                  Verified Buyer
+                                </span>
+                              </div>
                               <div className="flex mb-2">
                                  {[1,2,3,4,5].map(star => (
                                     <Star key={star} className={`h-3 w-3 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
