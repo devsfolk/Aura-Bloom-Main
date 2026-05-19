@@ -499,7 +499,7 @@ export const Home: React.FC = () => {
           <div className="absolute inset-0 rounded-full border-t border-indigo-600 animate-spin" />
         </div>
         <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mt-4 animate-pulse">
-          Loading catalog...
+          loading...
         </span>
       </div>
     );
