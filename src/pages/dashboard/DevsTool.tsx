@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Lock, Key, ShieldCheck, Database, GitBranch, Plus, Trash2, Play, CheckCircle2, AlertTriangle, Cpu, Globe, Pencil, Save, XCircle } from 'lucide-react';
+import { Terminal, Lock, Key, ShieldCheck, Database, GitBranch, Plus, Trash2, Play, CheckCircle2, AlertTriangle, Cpu, Globe, Pencil, Save, XCircle, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +107,104 @@ export const DevsTool: React.FC = () => {
     localStorage.setItem('devsfolk_devstool_registry', JSON.stringify(updated));
     setEditingStoreId(null);
     addLog(`[registry] store successfully updated: "${editForm.name}"`);
+  };
+
+  // Provisioning State
+  const [provisioningStoreId, setProvisioningStoreId] = useState<string | null>(null);
+  const [serviceRoleKey, setServiceRoleKey] = useState('');
+  const [provEmail, setProvEmail] = useState('devsfolk@gmail.com');
+  const [provPassword, setProvPassword] = useState('lTCBkXW0HA4rNh0r');
+  const [isProvisioning, setIsProvisioning] = useState(false);
+
+  const startProvisioning = (store: DeveloperStore) => {
+    setProvisioningStoreId(store.id);
+    setServiceRoleKey('');
+    setProvEmail('devsfolk@gmail.com');
+    setProvPassword('lTCBkXW0HA4rNh0r');
+  };
+
+  const handleProvisionAdmin = async (store: DeveloperStore) => {
+    if (!serviceRoleKey) {
+      addLog(`[provision] ⚠️ Error: Service Role Key is required for store "${store.name}".`);
+      return;
+    }
+    
+    setIsProvisioning(true);
+    addLog(`[provision] starting admin provisioning for store: "${store.name}"...`);
+    
+    const url = store.supabaseUrl.replace(/\/$/, '').replace(/\/rest\/v1\/?$/, '');
+    const authUrl = `${url}/auth/v1/admin/users`;
+    
+    try {
+      addLog(`[provision] connecting to auth gateway: ${authUrl}`);
+      const response = await fetch(authUrl, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: provEmail,
+          password: provPassword,
+          email_confirm: true
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        addLog(`[success] ✅ admin user "${provEmail}" created successfully for store "${store.name}".`);
+        setProvisioningStoreId(null);
+      } else if (result.message && result.message.includes('already registered')) {
+        addLog(`[provision] user "${provEmail}" already exists. updating password...`);
+        
+        // Fetch users to locate user ID
+        const listResponse = await fetch(authUrl, {
+          headers: {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`
+          }
+        });
+        
+        if (!listResponse.ok) {
+          throw new Error(`failed to query users list: ${listResponse.statusText}`);
+        }
+        
+        const users = await listResponse.json();
+        const user = users.find((u: any) => u.email === provEmail);
+        
+        if (user) {
+          const updateResponse = await fetch(`${authUrl}/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              password: provPassword
+            })
+          });
+          
+          if (updateResponse.ok) {
+            addLog(`[success] ✅ admin password updated successfully for store "${store.name}".`);
+            setProvisioningStoreId(null);
+          } else {
+            const updateError = await updateResponse.json();
+            throw new Error(`failed to update password: ${updateError.message}`);
+          }
+        } else {
+          throw new Error('user already registered but could not locate user object.');
+        }
+      } else {
+        throw new Error(result.message || 'unknown authentication error');
+      }
+    } catch (err: any) {
+      addLog(`[error] ❌ provisioning failed: ${err.message}`);
+    } finally {
+      setIsProvisioning(false);
+    }
   };
 
   // Terminal Console State
@@ -367,6 +465,71 @@ export const DevsTool: React.FC = () => {
                         </Button>
                       </div>
                     </div>
+                  ) : provisioningStoreId === store.id ? (
+                    /* Provisioning Wizard Card */
+                    <div className="space-y-3 font-mono">
+                      <div>
+                        <h4 className="font-black text-[11px] uppercase tracking-wider text-indigo-400">Provision Admin Account</h4>
+                        <p className="text-[8px] text-gray-500 uppercase mt-0.5">Configure authentication for "{store.name}"</p>
+                      </div>
+                      
+                      <div className="border-t border-slate-800/85 pt-2 space-y-3">
+                        <div>
+                          <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Service Role Key (Secret)</label>
+                          <Input
+                            type="password"
+                            required
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                            value={serviceRoleKey}
+                            onChange={(e) => setServiceRoleKey(e.target.value)}
+                            className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Admin Email</label>
+                          <Input
+                            type="email"
+                            required
+                            placeholder="devsfolk@gmail.com"
+                            value={provEmail}
+                            onChange={(e) => setProvEmail(e.target.value)}
+                            className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[8px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Admin Password</label>
+                          <Input
+                            type="password"
+                            required
+                            placeholder="lTCBkXW0HA4rNh0r"
+                            value={provPassword}
+                            onChange={(e) => setProvPassword(e.target.value)}
+                            className="h-9 rounded-lg border-slate-850 bg-slate-950/80 text-xs text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          onClick={() => handleProvisionAdmin(store)}
+                          disabled={isProvisioning}
+                          className="flex-1 h-9 rounded-lg font-black uppercase tracking-widest text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          {isProvisioning ? 'Working...' : 'Provision'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setProvisioningStoreId(null)}
+                          className="flex-1 h-9 rounded-lg font-black uppercase tracking-widest text-[9px] border border-slate-850 hover:bg-slate-800 text-slate-400"
+                        >
+                          <XCircle className="h-3 w-3" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     /* Display Mode Card */
                     <>
@@ -422,6 +585,16 @@ export const DevsTool: React.FC = () => {
                             Active Sync
                           </span>
                         </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-800/80 mt-2">
+                        <Button
+                          onClick={() => startProvisioning(store)}
+                          className="w-full h-8 rounded-xl font-black uppercase tracking-widest text-[9px] bg-slate-950 border border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 text-indigo-400 flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Provision Admin
+                        </Button>
                       </div>
                     </>
                   )}
