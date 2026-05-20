@@ -39,6 +39,7 @@ interface ShopContextType {
   loading: boolean;
   reviews: Review[];
   addReview: (review: Omit<Review, 'id' | 'createdAt'>) => void;
+  deleteReview: (id: string) => void;
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
   isAdmin: boolean;
@@ -66,11 +67,11 @@ const DEFAULT_SETTINGS: ThemeSettings = {
   backgroundColor: '#ffffff',
   fontSans: 'Inter',
   fontDisplay: 'Outfit',
-  shopName: 'Lumina Beauty',
-  shopDescription: 'Premium Artistry & Skincare for the Modern Aesthetic',
+  shopName: '',
+  shopDescription: '',
   currency: 'USD',
   currencySymbol: '$',
-  whatsappNumber: '1234567890',
+  whatsappNumber: '',
   orderMode: 'WEBSITE',
   contactRequired: 'phone',
   phoneFormat: 'pakistan',
@@ -102,36 +103,12 @@ const DEFAULT_SETTINGS: ThemeSettings = {
   analytics: {
     googleAnalyticsId: '',
   },
-  trustFeatures: [
-    { id: 'feature-shipping', title: 'Free Shipping', subtitle: 'Fast delivery on eligible orders', icon: 'truck', enabled: true },
-    { id: 'feature-secure', title: 'Secure Checkout', subtitle: 'Protected payments and trusted checkout', icon: 'shield', enabled: true },
-    { id: 'feature-support', title: 'Quick Support', subtitle: 'Reach us easily when you need help', icon: 'message-circle', enabled: true },
-    { id: 'feature-returns', title: 'Easy Returns', subtitle: 'Simple return process for peace of mind', icon: 'rotate-ccw', enabled: true },
-  ],
-  socialLinks: [
-    { id: 'social-instagram', platform: 'Instagram', url: '', enabled: false },
-    { id: 'social-facebook', platform: 'Facebook', url: '', enabled: false },
-    { id: 'social-youtube', platform: 'YouTube', url: '', enabled: false },
-    { id: 'social-whatsapp', platform: 'WhatsApp', url: '', enabled: false },
-  ],
+  trustFeatures: [],
+  socialLinks: [],
   desktop: { ...DEFAULT_DEVICE_CONFIG, productGridCols: 4 },
   tablet: { ...DEFAULT_DEVICE_CONFIG, productGridCols: 2, headerStyle: 'minimal' },
   mobile: { ...DEFAULT_DEVICE_CONFIG, productGridCols: 1, headerStyle: 'minimal', heroStyle: 'minimal' },
-  sections: [
-    {
-      id: 's1',
-      type: 'HERO',
-      title: 'Elevate Your Everyday Style',
-      subtitle: 'Discover our curated collection of premium essentials.',
-      enabled: true,
-      order: 0,
-      config: { height: 'medium', textAlign: 'left', buttonText: 'Shop All' },
-    },
-    { id: 's2', type: 'CATEGORIES', title: 'Shop by Category', enabled: true, order: 1 },
-    { id: 's3', type: 'FEATURED_PRODUCTS', title: 'New Arrivals', enabled: true, order: 2 },
-    { id: 's4', type: 'ABOUT', title: 'Our Story', enabled: true, order: 3 },
-    { id: 's5', type: 'NEWSLETTER', title: 'Join the Community', enabled: true, order: 4 },
-  ],
+  sections: [],
 };
 
 const SAMPLE_CATEGORIES: Category[] = [
@@ -457,7 +434,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const rawSettings = (settingsResult.data?.value ?? {}) as Partial<ThemeSettings>;
       const remoteSettings = mergeSettings(rawSettings);
       setSettings(remoteSettings);
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(remoteSettings));
       applyCssVariables(remoteSettings);
     }
 
@@ -466,7 +442,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteCategories = (categoriesResult.data ?? []).map(mapCategoryRow);
       setCategories(remoteCategories);
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(remoteCategories));
     }
 
     if (productsResult.error) {
@@ -474,7 +449,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteProducts = (productsResult.data ?? []).map(mapProductRow);
       setProducts(remoteProducts);
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(remoteProducts));
     }
 
     if (reviewsResult.error) {
@@ -482,7 +456,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       const remoteReviews = (reviewsResult.data ?? []).map(mapReviewRow);
       setReviews(remoteReviews);
-      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(remoteReviews));
     }
   };
 
@@ -643,30 +616,37 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const localSettings = mergeSettings(hasLocalSettings ? readLocalJson<Partial<ThemeSettings> | null>(SETTINGS_STORAGE_KEY, null) : null);
       const localProducts = hasLocalProducts
         ? readLocalJson<Product[]>(PRODUCTS_STORAGE_KEY, [])
-        : hasSupabaseConfig
-          ? []
-          : SAMPLE_PRODUCTS;
+        : SAMPLE_PRODUCTS;
       const localCategories = hasLocalCategories
         ? readLocalJson<Category[]>(CATEGORIES_STORAGE_KEY, [])
-        : hasSupabaseConfig
-          ? []
-          : SAMPLE_CATEGORIES;
+        : SAMPLE_CATEGORIES;
       const localOrders = readLocalJson<Order[]>(ORDERS_STORAGE_KEY, []);
       const localReviews = hasLocalReviews ? readLocalJson<Review[]>(REVIEWS_STORAGE_KEY, []) : [];
       const localCart = readLocalJson<CartItem[]>(CART_STORAGE_KEY, []);
       const localWishlist = readLocalJson<string[]>(WISHLIST_STORAGE_KEY, []);
 
-      setSettings(localSettings);
-      setProducts(localProducts);
-      setCategories(localCategories);
-      setOrders(localOrders);
-      setReviews(localReviews);
+      if (hasSupabaseConfig) {
+        // Production mode: Bypasses stale local caches. Load fresh from Supabase.
+        setSettings(mergeSettings(null));
+        setProducts([]);
+        setCategories([]);
+        setReviews([]);
+        setOrders([]);
+      } else {
+        // Offline / Local development fallback mode
+        setSettings(localSettings);
+        setProducts(localProducts);
+        setCategories(localCategories);
+        setReviews(localReviews);
+        setOrders(localOrders);
+      }
+
       setCart(localCart);
       setWishlist(localWishlist);
-      applyCssVariables(localSettings);
-      setDataLoading(false);
+      applyCssVariables(hasSupabaseConfig ? mergeSettings(null) : localSettings);
 
       if (!supabase) {
+        setDataLoading(false);
         setAuthLoading(false);
         return;
       }
@@ -676,6 +656,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await flushPendingOrdersToSupabase();
       } catch (error) {
         reportSyncError('Failed to hydrate storefront data from Supabase.', error);
+      } finally {
+        setDataLoading(false);
       }
     };
 
@@ -814,6 +796,48 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'store_settings' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reviews' },
+        () => {
+          void syncCatalogFromSupabase();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!supabase || !isAdmin) {
       return;
     }
@@ -836,7 +860,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateSettings = (newSettings: Partial<ThemeSettings>) => {
     const updated = mergeSettings({ ...settings, ...newSettings });
     setSettings(updated);
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    }
     applyCssVariables(updated);
 
     if (supabase) {
@@ -876,7 +902,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProduct: Product = { ...product, id: createId('p'), createdAt: Date.now() };
     const updated = [newProduct, ...products];
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -894,7 +922,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = products.map((product) => (product.id === id ? { ...product, ...updates } : product));
     const product = updated.find((item) => item.id === id);
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase && product) {
       void (async () => {
@@ -911,7 +941,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteProduct = (id: string) => {
     const updated = products.filter((product) => product.id !== id);
     setProducts(updated);
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -929,7 +961,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newCategory: Category = { ...category, id: createId('c'), createdAt: Date.now() };
     const updated = [newCategory, ...categories];
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -947,7 +981,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = categories.map((category) => (category.id === id ? { ...category, ...updates } : category));
     const category = updated.find((item) => item.id === id);
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase && category) {
       void (async () => {
@@ -964,7 +1000,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteCategory = (id: string) => {
     const updated = categories.filter((category) => category.id !== id);
     setCategories(updated);
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    if (!supabase) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updated));
+    }
 
     if (supabase) {
       void (async () => {
@@ -1062,6 +1100,20 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (supabase) {
       void supabase.from('reviews').insert(toReviewRow(newReview));
+    }
+  };
+
+  const deleteReview = (id: string) => {
+    const updated = reviews.filter((rev) => rev.id !== id);
+    setReviews(updated);
+    localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(updated));
+
+    if (supabase) {
+      void supabase.from('reviews').delete().eq('id', id).then(({ error }) => {
+        if (error) {
+          console.error('Failed to delete review from Supabase:', error.message);
+        }
+      });
     }
   };
 
@@ -1212,6 +1264,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       reviews,
       addReview,
+      deleteReview,
       wishlist,
       toggleWishlist,
       isAdmin,

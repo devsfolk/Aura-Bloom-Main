@@ -101,7 +101,7 @@ export const CartPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-[10px] md:text-sm font-bold uppercase tracking-widest text-gray-400">
                 <span>Shipping</span>
-                <span className={settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title.toLowerCase().includes('free') ? "text-green-600" : "text-black"}>
+                <span className={settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title?.toLowerCase()?.includes('free') ? "text-green-600" : "text-black"}>
                   {settings.trustFeatures.find(f => f.id === 'feature-shipping')?.title || 'FREE'}
                 </span>
               </div>
